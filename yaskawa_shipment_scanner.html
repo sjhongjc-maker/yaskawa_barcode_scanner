@@ -613,10 +613,30 @@ async function startCam() {
         facingMode: {ideal: facingMode},
         width:  {ideal: 1280},
         height: {ideal: 720},
-        // 자동 초점 속도 우선 (바코드 스캔 최적화)
-        focusMode: {ideal: 'continuous'},
       }
     });
+
+    // 카메라 고급 설정 — 초점 고정으로 스캔 속도 향상
+    const track = stream.getVideoTracks()[0];
+    if (track) {
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      const constraints = {};
+      // 연속 자동초점 (continuous > manual — 바코드 거리에서 안정적)
+      if (caps.focusMode && caps.focusMode.includes('continuous')) {
+        constraints.focusMode = 'continuous';
+      }
+      // 화이트밸런스 고정 (실내 형광등 기준)
+      if (caps.whiteBalanceMode && caps.whiteBalanceMode.includes('manual')) {
+        constraints.whiteBalanceMode = 'continuous';
+      }
+      // 노출 자동 (밝기 변화 대응)
+      if (caps.exposureMode && caps.exposureMode.includes('continuous')) {
+        constraints.exposureMode = 'continuous';
+      }
+      if (Object.keys(constraints).length > 0) {
+        track.applyConstraints({advanced: [constraints]}).catch(() => {});
+      }
+    }
     currentStream = stream;
     const v = document.getElementById('video');
     v.srcObject = stream;
@@ -947,7 +967,29 @@ function showToast(m) {
   el.textContent = m; el.classList.add('show');
   clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), 3000);
 }
-document.getElementById('min').addEventListener('keydown', e => { if (e.key==='Enter') addManual(); });
+// 키보드/블루투스 스캐너 입력 처리
+// 블루투스 스캐너: 빠른 연속 입력 후 자동 Enter 전송
+const manualInput = document.getElementById('min');
+let scannerInputTimer = null;
+manualInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    addManual();
+    return;
+  }
+});
+// 블루투스 스캐너 자동 감지: 짧은 시간(100ms) 내 여러 글자 입력 → 스캐너로 판단
+manualInput.addEventListener('input', e => {
+  clearTimeout(scannerInputTimer);
+  const val = manualInput.value.trim();
+  if (val.length >= 10) {
+    // 10자 이상 입력됐고 0.1초 내 추가 입력 없으면 자동 처리
+    scannerInputTimer = setTimeout(() => {
+      if (manualInput.value.trim().length >= 10) {
+        addManual();
+      }
+    }, 120);
+  }
+});
 
 // ══ 시작 ══
 function waitAndInit() {
