@@ -322,7 +322,7 @@ let currentStream = null, facingMode = 'environment';
 // 버퍼: 모델명 + S/N 만
 let buf = { model:null, serial:null };
 let bufStartTime = 0;
-const BUF_MAX_MS = 4000; // 4초 내 코드들만 같은 라벨로 묶음
+const BUF_MAX_MS = 3000; // 4초 내 코드들만 같은 라벨로 묶음
 
 // ══ 삑 소리 (Web Audio API - iOS 호환) ══
 let _audioCtx = null;
@@ -488,7 +488,7 @@ function feedCode(raw) {
 
   // 같은 코드 2초 내 중복 무시
   const lastSeen = lastCodes.get(val) || 0;
-  if (now - lastSeen < 2000) return;
+  if (now - lastSeen < 700) return;
   lastCodes.set(val, now);
 
   // 버퍼가 오래됐으면 리셋
@@ -609,7 +609,13 @@ async function startCam() {
   try {
     if (currentStream) currentStream.getTracks().forEach(t => t.stop());
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: {facingMode:{ideal:facingMode}, width:{ideal:1920}, height:{ideal:1080}}
+      video: {
+        facingMode: {ideal: facingMode},
+        width:  {ideal: 1280},
+        height: {ideal: 720},
+        // 자동 초점 속도 우선 (바코드 스캔 최적화)
+        focusMode: {ideal: 'continuous'},
+      }
     });
     currentStream = stream;
     const v = document.getElementById('video');
@@ -653,39 +659,92 @@ function startLoop(video) {
         const fullResults = await nativeDet.detect(scanCanvas).catch(() => []);
         fullResults.forEach(r => { if (r.rawValue) feedCode(r.rawValue); });
 
-        // ── 위치 기반 보완 스캔 (필요한 코드만 집중) ──
-        // 현재 버퍼 상태에 따라 필요한 영역만 추가 스캔
+        // ── 위치 기반 보완 스캔 — 병렬 실행 ──
+        // 필요한 존만 골라서 Promise.all 로 동시 처리
+        const zoneTasks = [];
         if (!buf.model) {
-          // 모델명 없음 → 상단 45% 확대 스캔
-          await scanZone(video, W, H, 0, 0, W, H * 0.45);
+          // 모델명: 상단 40% 확대 스캔
+          zoneTasks.push(scanZone(video, W, H, 0, 0, W, H * 0.40));
         }
         if (!buf.serial) {
-          // S/N 없음 → 하단 40% 확대 스캔
-          await scanZone(video, W, H, 0, H * 0.55, W, H * 0.45);
+          // S/N: 하단 35% 확대 스캔
+          zoneTasks.push(scanZone(video, W, H, 0, H * 0.60, W, H * 0.40));
+        }
+        if (zoneTasks.length > 0) {
+          await Promise.all(zoneTasks);
         }
       }
-      setTimeout(() => { if (scanRunning) requestAnimationFrame(loop); }, 200);
+      setTimeout(() => { if (scanRunning) requestAnimationFrame(loop); }, 100);
     })();
 
   } else if (typeof ZXingBrowser !== 'undefined') {
-    // ZXing은 단일 스캔만 가능 — 전체 프레임 사용
+    // ZXing: 전체 프레임 연속 스캔
     try {
       const reader = new ZXingBrowser.BrowserMultiFormatReader();
       reader.decodeFromVideoElement(video, (result) => {
         if (result) feedCode(result.getText());
       });
     } catch(e) { setBadge('ZXing 오류', 'eb-error'); }
+
+    // ZXing 보조: 200ms 간격으로 분할 존 스캔 시도
+    if (!scanCanvas) {
+      scanCanvas = document.createElement('canvas');
+      scanCtx = scanCanvas.getContext('2d', {willReadFrequently:true});
+    }
+    if (!zoneCanvas) {
+      zoneCanvas = document.createElement('canvas');
+      zoneCtx = zoneCanvas.getContext('2d', {willReadFrequently:true});
+    }
+    (async function zxZoneLoop() {
+      if (!scanRunning) return;
+      if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+        const W = video.videoWidth, H = video.videoHeight;
+        // 모델명 없으면 상단 존 ZXing 시도
+        if (!buf.model) {
+          try {
+            const scale = 2.5;
+            zoneCanvas.width = W * scale; zoneCanvas.height = H * 0.4 * scale;
+            zoneCtx.drawImage(video, 0, 0, W, H*0.4, 0, 0, W*scale, H*0.4*scale);
+            const blob = await new Promise(r => zoneCanvas.toBlob(r, 'image/jpeg', 0.9));
+            const url = URL.createObjectURL(blob);
+            const r2 = new ZXingBrowser.BrowserMultiFormatReader();
+            const res = await r2.decodeFromImageUrl(url).catch(()=>null);
+            URL.revokeObjectURL(url);
+            if (res) feedCode(res.getText());
+          } catch(e) {}
+        }
+      }
+      setTimeout(() => { if (scanRunning) zxZoneLoop(); }, 300);
+    })();
   }
 }
 
-// 특정 영역만 잘라서 스캔
+// 특정 영역을 잘라 확대 + 대비 강화 후 스캔
 async function scanZone(video, fullW, fullH, sx, sy, sw, sh) {
   try {
-    // 잘라낸 영역을 2배 확대해서 캔버스에 그림 (인식률 향상)
-    const scale = 2;
-    zoneCanvas.width  = sw * scale;
-    zoneCanvas.height = sh * scale;
-    zoneCtx.drawImage(video, sx, sy, sw, sh, 0, 0, sw * scale, sh * scale);
+    const scale = 2.5; // 2배 → 2.5배 (더 굵은 바코드 막대)
+    const dw = Math.round(sw * scale);
+    const dh = Math.round(sh * scale);
+    zoneCanvas.width  = dw;
+    zoneCanvas.height = dh;
+
+    // 영역 확대 그리기
+    zoneCtx.drawImage(video, sx, sy, sw, sh, 0, 0, dw, dh);
+
+    // 그레이스케일 + 대비 강화 (바코드 인식률 향상)
+    // CSS filter보다 직접 픽셀 처리가 BarcodeDetector에 더 효과적
+    const imageData = zoneCtx.getImageData(0, 0, dw, dh);
+    const d = imageData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      // 그레이스케일
+      const gray = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
+      // 대비 강화: 중간값 128 기준으로 밝고 어두움 확장
+      const contrast = 1.4;
+      const val = Math.min(255, Math.max(0, (gray - 128) * contrast + 128));
+      d[i] = d[i+1] = d[i+2] = val;
+    }
+    zoneCtx.putImageData(imageData, 0, 0);
+
     const results = await nativeDet.detect(zoneCanvas).catch(() => []);
     results.forEach(r => { if (r.rawValue) feedCode(r.rawValue); });
   } catch(e) {}
