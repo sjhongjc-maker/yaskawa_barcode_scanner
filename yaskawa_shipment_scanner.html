@@ -366,11 +366,14 @@ function goPage(n) {
 // ══ 코드 전처리 ══
 function preprocess(raw) {
   let c = raw.trim();
-  // S/N 끝 체크문자 제거
-  const snMatch = c.match(/^([A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,})[A-Z]$/);
-  if (snMatch) c = snMatch[1];
+  // S/N 끝 체크문자 제거 (서보팩: 알파벳 시작, 서보모터: 숫자 시작 모두 처리)
+  // 영숫자 14~16자 + 끝에 알파벳 1자 → 끝 문자 제거
+  const snMatch = c.match(/^([A-Z0-9]{14,15})[A-Z]$/);
+  if (snMatch && !snMatch[1].includes('-') && !/^\d+$/.test(snMatch[1])) {
+    c = snMatch[1];
+  }
   // S/N 최대 15자리 (앞에서 15자만 사용)
-  if (/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}$/.test(c) && c.length > 15) {
+  if (c.length > 15 && !c.includes('-') && /^[A-Z0-9]+$/.test(c) && !/^\d+$/.test(c)) {
     c = c.substring(0, 15);
   }
   // 모델명 끝 히든 체크문자 C 제거
@@ -434,8 +437,13 @@ function classify(raw) {
   if (/^SG[DM][A-Z0-9]{1,2}-[A-Z0-9]/i.test(c)) return {type:'model', val:c};
 
   // ── S/N 판별 ──
-  // 패턴: 알파벳1~2 + 숫자3~4 + 알파벳1~2 + 숫자8이상 (총 14~18자)
-  if (/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}$/.test(c) && c.length >= 14) {
+  // 서보팩 S/N: 알파벳 시작  예) D0251K348710016, DL186M222510003
+  // 서보모터 S/N: 숫자 시작  예) 1A2285264540009  ← 숫자로 시작!
+  // 공통 조건: 하이픈 없음, 14~15자, 영숫자만, 순수숫자 아님
+  if (c.length >= 14 && c.length <= 16 &&
+      !c.includes('-') &&
+      /^[A-Z0-9]+$/.test(c) &&
+      !/^\d+$/.test(c)) {        // 순수 숫자(O/N 등) 제외
     return {type:'serial', val:c};
   }
 
