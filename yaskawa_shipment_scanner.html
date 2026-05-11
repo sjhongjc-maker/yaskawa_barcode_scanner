@@ -717,17 +717,20 @@ function showToast(m){
 document.getElementById('min').addEventListener('keydown',e=>{if(e.key==='Enter')addManual();});
 
 // 시작
-// zxing-bundle.js 로드 완료 후 initEngine 실행
 function waitAndInit(){
-  if(typeof ZXingBrowser !== 'undefined'){
+  if(typeof ZXingBrowser !== 'undefined' || window._zxingBundleLoaded){
     initEngine();
   } else if(window._zxingLoaded === false){
-    initEngine(); // 로드 실패 — 폴백으로 진행
+    initEngine();
   } else {
-    setTimeout(waitAndInit, 100);
+    setTimeout(waitAndInit, 150);
   }
 }
-waitAndInit();
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', waitAndInit);
+} else {
+  waitAndInit();
+}
 </script>
 </body>
 </html>
