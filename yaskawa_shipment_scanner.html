@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="출하 스캐너">
+<title>YASKAWA 출하 스캐너</title>
+
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║  GitHub Actions 자동 빌드 방식                           ║
+  ║  .github/workflows/bundle.yml 이 자동으로               ║
+  ║  zxing-bundle.js 를 생성하고 GitHub Pages 에 배포함     ║
+  ╚══════════════════════════════════════════════════════════╝
+-->
+<script src="zxing-bundle.js"></script>
+
+<style>
+:root{
+  --bg:#f5f5f3;--sf:#fff;--sf2:#efefed;--bd:rgba(0,0,0,.10);--bdm:rgba(0,0,0,.18);
+  --tx:#1a1a1a;--t2:#666;--t3:#999;
+  --blue:#1a6fc4;--blueb:#e8f2fc;
+  --green:#1e7e3c;--greenb:#e6f5ec;
+  --red:#c0392b;--redb:#fdecea;
+  --amber:#a05c00;--amberb:#fff3e0;
+  --purple:#5c3d9e;--purpleb:#f0ecfc;
+  --r:10px;--rs:7px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#111;--sf:#1e1e1e;--sf2:#2a2a2a;--bd:rgba(255,255,255,.10);--bdm:rgba(255,255,255,.18);
+  --tx:#f0f0f0;--t2:#aaa;--t3:#666;
+  --blue:#5aabf7;--blueb:#0d2a45;--green:#4ecb71;--greenb:#0d2e1a;
+  --red:#f47c72;--redb:#2e0d0a;--amber:#ffb84d;--amberb:#2e1f00;
+  --purple:#b59ef5;--purpleb:#1e1440;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;color:var(--tx);overflow-x:hidden}
+.page{display:none}.page.active{display:block}
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--sf);
+  border-top:.5px solid var(--bd);display:flex;max-width:480px;margin:0 auto;
+  padding-bottom:env(safe-area-inset-bottom)}
+.tbtab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 4px 6px;gap:3px;border:none;background:transparent;cursor:pointer;color:var(--t3)}
+.tbtab.on{color:var(--blue)}
+.tbtab svg{width:22px;height:22px}
+.tbtab span{font-size:10px;font-weight:600}
+
+/* 카메라 페이지 */
+#page-scan{position:relative;height:100dvh;height:100vh;background:#000;overflow:hidden}
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.scan-ui{position:absolute;inset:0;display:flex;flex-direction:column;pointer-events:none}
+.scan-top{flex:0 0 15%;background:rgba(0,0,0,.5)}
+.scan-mid{display:flex;flex:0 0 55%}
+.scan-side{width:6%;background:rgba(0,0,0,.5)}
+.scan-window{flex:1;position:relative}
+/* 모서리 마커 */
+.sw-tl,.sw-tr,.sw-bl,.sw-br{position:absolute;width:24px;height:24px;border-color:#fff;border-style:solid}
+.sw-tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:6px 0 0 0}
+.sw-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 6px 0 0}
+.sw-bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 6px}
+.sw-br{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 6px 0}
+.scan-beam{position:absolute;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,#3b9ef5,transparent);
+  animation:beam 1.6s ease-in-out infinite}
+@keyframes beam{0%,100%{top:2%}50%{top:94%}}
+.scan-bot{flex:1;background:rgba(0,0,0,.5);display:flex;flex-direction:column;
+  align-items:center;gap:10px;padding:14px 20px 10px;pointer-events:none}
+.scan-hint{font-size:14px;color:rgba(255,255,255,.92);font-weight:600;text-align:center}
+.scan-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:all}
+.chip{font-size:11px;padding:5px 12px;border-radius:20px;
+  border:1.5px solid rgba(255,255,255,.4);color:rgba(255,255,255,.7);
+  background:transparent;cursor:pointer;font-weight:600}
+.chip.on{background:rgba(255,255,255,.2);border-color:#fff;color:#fff}
+.cam-side-btns{position:absolute;top:16px;right:14px;display:flex;flex-direction:column;gap:10px;pointer-events:all}
+.cam-ico{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);
+  border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cam-ico svg{width:20px;height:20px}
+.cam-ico.lit{color:#fbbf24}
+.engine-badge{position:absolute;top:14px;left:14px;font-size:11px;padding:4px 10px;
+  border-radius:20px;font-weight:700;pointer-events:none}
+.eb-loading{background:rgba(251,191,36,.25);color:#fbbf24;border:1px solid rgba(251,191,36,.4)}
+.eb-ready{background:rgba(74,222,128,.2);color:#4ade80;border:1px solid rgba(74,222,128,.35)}
+.eb-error{background:rgba(248,113,113,.2);color:#f87171;border:1px solid rgba(248,113,113,.35)}
+.start-ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;background:rgba(0,0,0,.72)}
+.start-btn{padding:14px 32px;background:rgba(255,255,255,.15);
+  border:2px solid rgba(255,255,255,.6);color:#fff;border-radius:var(--r);
+  font-size:16px;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:700;pointer-events:all}
+.start-note{font-size:13px;color:rgba(255,255,255,.55);text-align:center;padding:0 24px;line-height:1.55}
+.fb{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .1s}
+.fb.ok{background:rgba(34,197,94,.3)}.fb.err{background:rgba(220,53,53,.4)}.fb.on{opacity:1}
+.last-card{display:none;position:absolute;left:0;right:0;bottom:0;
+  background:rgba(15,15,15,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  padding:12px 16px calc(16px + env(safe-area-inset-bottom));
+  border-top:1px solid rgba(255,255,255,.12)}
+.last-card.show{display:block}
+.lc-title{font-size:10px;color:rgba(255,255,255,.45);font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.lc-rows{display:flex;flex-direction:column;gap:5px}
+.lc-row{display:flex;align-items:center;gap:8px}
+.lc-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.lc-code{font-size:13px;font-family:'Courier New',monospace;color:#fff;word-break:break-all;font-weight:600;flex:1}
+.lc-series{font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap;flex-shrink:0}
+
+/* 목록 페이지 */
+#page-list{padding-bottom:calc(62px + env(safe-area-inset-bottom));min-height:100vh}
+.list-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;border-bottom:.5px solid var(--bd);
+  background:var(--sf);position:sticky;top:0;z-index:10}
+.list-hdr h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
+.list-hdr h1 svg{width:20px;height:20px}
+.clr-btn{font-size:12px;color:var(--red);background:none;border:.5px solid var(--red);
+  padding:3px 11px;border-radius:20px;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px}
+.stat{background:var(--sf);border:.5px solid var(--bd);border-radius:var(--r);padding:10px 8px;text-align:center}
+.stat-n{font-size:24px;font-weight:700}.stat-n.red{color:var(--red)}
+.stat-l{font-size:11px;color:var(--t2);margin-top:1px}
+.manual{display:flex;gap:6px;padding:0 12px 12px}
+.manual input{flex:1;padding:9px 11px;font-size:14px;border:.5px solid var(--bdm);
+  border-radius:var(--rs);background:var(--sf);color:var(--tx);outline:none}
+.manual input:focus{border-color:var(--blue)}
+.manual button{padding:9px 14px;font-size:13px;font-weight:700;border:.5px solid var(--bdm);
+  border-radius:var(--rs);background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap}
+.item-group{margin:0 12px 10px;background:var(--sf);border:.5px solid var(--bd);
+  border-radius:var(--r);overflow:hidden;animation:si .2s ease}
+@keyframes si{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.igh{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px 8px;border-bottom:.5px solid var(--bd)}
+.igh-l{display:flex;align-items:center;gap:9px}
+.igh-num{width:24px;height:24px;border-radius:50%;background:var(--blueb);color:var(--blue);
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.igh-model{font-size:14px;font-weight:700;font-family:'Courier New',monospace}
+.igh-series{font-size:11px;color:var(--t2)}
+.del-g{background:none;border:none;font-size:22px;color:var(--t3);cursor:pointer;padding:0 4px;line-height:1}
+.irows{padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+.irow{display:flex;align-items:center;gap:8px}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.bm{background:var(--blueb);color:var(--blue)}
+.bo{background:var(--greenb);color:var(--green)}
+.bs{background:var(--purpleb);color:var(--purple)}
+.bq{background:var(--amberb);color:var(--amber)}
+.bx{background:var(--sf2);color:var(--t2)}
+.icode{font-size:12.5px;font-family:'Courier New',monospace;color:var(--tx);word-break:break-all;flex:1}
+.ifoot{display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px 10px}
+.ifoot-time{font-size:11px;color:var(--t3)}
+.ifoot-st{font-size:11px;font-weight:700}
+.st-ok{color:var(--green)}.st-partial{color:var(--amber)}
+.empty-st{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:13px;line-height:1.9}
+.empty-st svg{width:44px;height:44px;opacity:.3;display:block;margin:0 auto 12px}
+
+/* 내보내기 페이지 */
+#page-export{padding:14px 16px;padding-bottom:calc(80px + env(safe-area-inset-bottom));min-height:100vh}
+#page-export h2{font-size:16px;font-weight:700;margin-bottom:14px}
+.exp-btn{width:100%;padding:14px;font-size:14px;font-weight:700;border-radius:var(--r);
+  cursor:pointer;display:flex;align-items:center;gap:10px;
+  border:.5px solid var(--bdm);background:var(--sf);color:var(--tx);margin-bottom:10px}
+.exp-btn svg{width:20px;height:20px;flex-shrink:0}
+.exp-btn:active{opacity:.7}
+.exp-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.exp-btn.green{background:var(--green);color:#fff;border-color:var(--green)}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;
+  letter-spacing:.04em;margin:18px 0 10px}
+.flbl{display:block;font-size:11px;font-weight:700;color:var(--t2);
+  margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.finp{width:100%;padding:10px 12px;font-size:14px;border:.5px solid var(--bdm);
+  border-radius:var(--rs);background:var(--sf2);color:var(--tx);outline:none;font-family:inherit}
+.finp:focus{border-color:var(--blue)}
+textarea.finp{resize:none;height:70px}
+.fnote{font-size:12px;color:var(--t3);margin-top:8px;line-height:1.55}
+
+/* 중복 모달 */
+.dup-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:300;align-items:center;justify-content:center}
+.dup-ov.open{display:flex}
+.dup-box{background:var(--sf);border-radius:20px;padding:2rem 1.5rem 1.5rem;
+  width:88%;max-width:340px;text-align:center}
+.dup-ico{width:64px;height:64px;border-radius:50%;background:var(--redb);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.dup-ico svg{width:32px;height:32px;color:var(--red)}
+.dup-box h2{font-size:17px;font-weight:700;margin-bottom:6px}
+.dup-box p{font-size:13px;color:var(--t2);margin-bottom:14px;line-height:1.5}
+.dup-code-card{background:var(--sf2);border-radius:var(--rs);padding:10px 14px;text-align:left;margin-bottom:4px}
+.dup-code-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:3px}
+.dup-code-val{font-size:13px;font-family:'Courier New',monospace;font-weight:700;color:var(--red);word-break:break-all}
+.dup-ok{width:100%;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;
+  cursor:pointer;border:none;background:var(--red);color:#fff;margin-top:12px}
+
+.toast{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+  background:rgba(20,20,20,.92);color:#fff;padding:10px 20px;border-radius:24px;
+  font-size:13px;font-weight:500;z-index:400;opacity:0;transition:opacity .22s;
+  pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- 스캔 페이지 -->
+<div id="page-scan" class="page active">
+  <video id="video" autoplay playsinline muted></video>
+  <div class="scan-ui">
+    <div class="scan-top"></div>
+    <div class="scan-mid">
+      <div class="scan-side"></div>
+      <div class="scan-window">
+        <div class="sw-tl"></div><div class="sw-tr"></div>
+        <div class="sw-bl"></div><div class="sw-br"></div>
+        <div class="scan-beam"></div>
+      </div>
+      <div class="scan-side"></div>
+    </div>
+    <div class="scan-bot">
+      <div class="scan-hint" id="scan-hint">바코드 / QR을 프레임 안에 맞춰주세요</div>
+      <div class="scan-chips">
+        <button class="chip" onclick="setMode('model')">모델명</button>
+        <button class="chip" onclick="setMode('order')">O/N</button>
+        <button class="chip" onclick="setMode('serial')">S/N</button>
+        <button class="chip on" onclick="setMode('auto')">자동감지</button>
+      </div>
+    </div>
+  </div>
+  <div class="engine-badge eb-loading" id="eng-badge">준비 중...</div>
+  <div class="cam-side-btns">
+    <button class="cam-ico" id="torch-btn" onclick="toggleTorch()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    </button>
+    <button class="cam-ico" onclick="flipCam()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10"/><path d="M3.51 15a9 9 0 0 0 14.85 3.36L23 14"/></svg>
+    </button>
+  </div>
+  <div class="start-ov" id="start-ov">
+    <button class="start-btn" onclick="startCam()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      카메라 시작
+    </button>
+    <div class="start-note" id="start-note">카메라 권한이 필요합니다</div>
+  </div>
+  <div class="fb" id="fb"></div>
+  <div class="last-card" id="last-card">
+    <div class="lc-title">방금 등록</div>
+    <div class="lc-rows" id="lc-rows"></div>
+  </div>
+</div>
+
+<!-- 목록 페이지 -->
+<div id="page-list" class="page">
+  <div class="list-hdr">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      스캔 목록
+    </h1>
+    <button class="clr-btn" onclick="clearAll()">전체 삭제</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="s0">0</div><div class="stat-l">등록 품목</div></div>
+    <div class="stat"><div class="stat-n" id="s1">0</div><div class="stat-l">총 스캔</div></div>
+    <div class="stat"><div class="stat-n red" id="s2">0</div><div class="stat-l">중복 차단</div></div>
+  </div>
+  <div class="manual">
+    <input type="text" id="min" placeholder="바코드 직접 입력 후 Enter">
+    <button onclick="addManual()">+ 추가</button>
+  </div>
+  <div id="item-list">
+    <div class="empty-st" id="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      스캔된 항목이 없습니다<br>카메라 탭에서 바코드를 스캔하세요
+    </div>
+  </div>
+</div>
+
+<!-- 내보내기 페이지 -->
+<div id="page-export" class="page">
+  <h2>내보내기</h2>
+  <button class="exp-btn primary" onclick="dlCSV()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    CSV / 엑셀 다운로드
+  </button>
+  <div class="sec-lbl">이메일 전송</div>
+  <label class="flbl">받는 사람</label>
+  <input class="finp" type="email" id="eto" placeholder="example@company.com">
+  <label class="flbl">제목</label>
+  <input class="finp" type="text" id="esubj">
+  <label class="flbl">메모 (선택)</label>
+  <textarea class="finp" id="enote" placeholder="추가 메모..."></textarea>
+  <button class="exp-btn primary" style="margin-top:12px" onclick="sendEmail()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    메일 앱 열기
+  </button>
+  <p class="fnote">※ 기기의 메일 앱이 열리며 CSV 데이터가 본문에 포함됩니다.</p>
+  <div class="sec-lbl" style="margin-top:20px">Google Sheets</div>
+  <label class="flbl">Apps Script 웹훅 URL</label>
+  <input class="finp" type="url" id="surl" placeholder="https://script.google.com/macros/s/...">
+  <button class="exp-btn green" style="margin-top:10px" onclick="sendSheets()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+    Google Sheets 전송
+  </button>
+</div>
+
+<!-- 탭바 -->
+<div class="tabbar">
+  <button class="tbtab on" id="tb0" onclick="goPage(0)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+    <span>스캔</span>
+  </button>
+  <button class="tbtab" id="tb1" onclick="goPage(1)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    <span id="tb1-lbl">목록 (0)</span>
+  </button>
+  <button class="tbtab" id="tb2" onclick="goPage(2)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span>내보내기</span>
+  </button>
+</div>
+
+<!-- 중복 모달 -->
+<div class="dup-ov" id="dup-ov">
+  <div class="dup-box">
+    <div class="dup-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <h2>이미 리스트업 된 제품입니다</h2>
+    <p>해당 바코드는 이미 목록에 등록되어<br>있습니다. 추가되지 않았습니다.</p>
+    <div class="dup-code-card">
+      <div class="dup-code-lbl">스캔된 코드</div>
+      <div class="dup-code-val" id="dup-code"></div>
+    </div>
+    <button class="dup-ok" onclick="closeDup()">확인</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// 상태
+// ════════════════════════════════════════
+const groups=[];
+let scanMode='auto', torchOn=false;
+let lastRaw='', lastRawAt=0, totalScans=0, blocked=0;
+let engineReady=false, useNative=false, nativeDet=null;
+let scanRunning=false, scanCanvas=null, scanCtx=null;
+let currentStream=null, facingMode='environment';
+let pendingGid=null, pendingTimer=null;
+
+// ════════════════════════════════════════
+// 페이지
+// ════════════════════════════════════════
+function goPage(n){
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));
+  document.querySelectorAll('.tbtab').forEach((t,i)=>t.classList.toggle('on',i===n));
+  if(n===2){
+    const d=new Date();
+    document.getElementById('esubj').value=`출하 목록 ${d.toLocaleDateString('ko-KR')} (${groups.length}건)`;
+  }
+}
+
+// ════════════════════════════════════════
+// YASKAWA 감지
+// ════════════════════════════════════════
+function detectY(c){
+  if(/^SGD7S-/i.test(c))return{s:'SIGMA-7',k:'서보팩'};
+  if(/^SGD7W-/i.test(c))return{s:'SIGMA-7W',k:'서보팩'};
+  if(/^SGDV-/i.test(c)) return{s:'SIGMA-5',k:'서보팩'};
+  if(/^SGDS-/i.test(c)) return{s:'SIGMA-5',k:'서보팩'};
+  if(/^SGM7[A-Z]-/i.test(c))return{s:'SIGMA-7',k:'서보모터'};
+  if(/^SGMJV-|^SGMAV-|^SGMPS-/i.test(c))return{s:'SIGMA-5',k:'서보모터'};
+  if(/^SGM[A-Z0-9]+-/i.test(c))return{s:'SIGMA',k:'서보모터'};
+  return null;
+}
+
+// ════════════════════════════════════════
+// 코드 분류
+// ════════════════════════════════════════
+function classify(raw){
+  if(/^O\/N\s*:/i.test(raw))return{type:'order',val:raw.replace(/^O\/N\s*:\s*/i,'').trim()};
+  if(/^S\/N\s*:/i.test(raw))return{type:'serial',val:raw.replace(/^S\/N\s*:\s*/i,'').trim()};
+  const c=raw.trim();
+  if(scanMode!=='auto')return{type:scanMode,val:c};
+  if(/^SG[DM][A-Z0-9]/i.test(c))return{type:'model',val:c};
+  if(/^[A-Z0-9]{1,3}[A-Z0-9]+-[A-Z0-9]+$/i.test(c)&&c.length<=16)return{type:'order',val:c};
+  if(/^[A-Z]{1,2}[0-9]{3}[A-Z][0-9]{8,}$/.test(c))return{type:'serial',val:c};
+  if(/^[A-Z][0-9]{3}[A-Z]{2}[0-9]{8,}$/.test(c))return{type:'serial',val:c};
+  if(c.length>=14&&/^[A-Z]{1,2}[0-9]/.test(c)&&!/\s/.test(c))return{type:'serial',val:c};
+  if(c.startsWith('http')||c.length>40)return{type:'qr',val:c};
+  return{type:'other',val:c};
+}
+
+// ════════════════════════════════════════
+// 항목 추가
+// ════════════════════════════════════════
+function tryAdd(raw){
+  const now=Date.now();
+  if(raw===lastRaw&&now-lastRawAt<1500)return;
+  lastRaw=raw; lastRawAt=now;
+
+  const {type,val}=classify(raw);
+  totalScans++;
+
+  if(isDup(val)){
+    blocked++; flash('err'); showDup(val); updateStats(); return;
+  }
+
+  flash('ok');
+
+  // 그룹 배정 — 모델명이 오면 새 그룹 시작
+  if(type==='model'||pendingGid===null){
+    const g={
+      id:now, model:type==='model'?val:null,
+      order:type==='order'?val:null,
+      serial:type==='serial'?val:null,
+      qr:type==='qr'?[val]:[], others:type==='other'?[val]:[],
+      yaskawa:type==='model'?detectY(val):null,
+      time:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
+    };
+    groups.push(g);
+    pendingGid=g.id;
+  }else{
+    const g=groups.find(x=>x.id===pendingGid);
+    if(g){
+      if(type==='model'&&!g.model){g.model=val;g.yaskawa=detectY(val);}
+      else if(type==='order'&&!g.order)g.order=val;
+      else if(type==='serial'&&!g.serial)g.serial=val;
+      else if(type==='qr')g.qr.push(val);
+      else g.others.push(val);
+    }
+  }
+  clearTimeout(pendingTimer);
+  pendingTimer=setTimeout(()=>{pendingGid=null;},3000);
+
+  updateStats(); renderList(); showLastCard();
+  showToast({model:'모델명',order:'오더번호',serial:'시리얼번호',qr:'QR코드',other:'기타'}[type]+' 등록: '+val.substring(0,22));
+}
+
+function isDup(val){
+  for(const g of groups){
+    if(g.model===val||g.order===val||g.serial===val)return true;
+    if(g.qr.includes(val)||g.others.includes(val))return true;
+  }
+  return false;
+}
+function addManual(){const v=document.getElementById('min').value.trim();if(!v)return;tryAdd(v);document.getElementById('min').value='';}
+
+// ════════════════════════════════════════
+// 엔진 초기화
+// ════════════════════════════════════════
+function setBadge(msg,cls){
+  const el=document.getElementById('eng-badge');
+  el.textContent=msg; el.className='engine-badge '+cls;
+}
+
+async function initEngine(){
+  setBadge('준비 중...','eb-loading');
+
+  // 1) 네이티브 BarcodeDetector (Android Chrome, iOS Safari 17.4+)
+  if('BarcodeDetector' in window){
+    try{
+      const fmts=['qr_code','code_128','code_39','ean_13','ean_8','data_matrix'];
+      nativeDet=new BarcodeDetector({formats:fmts});
+      // 실제 감지 테스트
+      const c=document.createElement('canvas');c.width=2;c.height=2;
+      await nativeDet.detect(c);
+      useNative=true; engineReady=true;
+      setBadge('✓ 네이티브 스캐너','eb-ready');
+      return;
+    }catch(e){nativeDet=null;}
+  }
+
+  // 2) ZXing (번들된 파일 — GitHub Actions 로 빌드됨)
+  if(typeof ZXingBrowser!=='undefined'){
+    useNative=false; engineReady=true;
+    setBadge('✓ ZXing 스캐너','eb-ready');
+    return;
+  }
+
+  // 3) ZXing CDN 동적 로드 시도
+  const cdns=[
+    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
+    'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js',
+  ];
+  for(const url of cdns){
+    try{
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        const t=setTimeout(()=>{rej(new Error('timeout'));},6000);
+        s.onload=()=>{clearTimeout(t);setTimeout(res,200);};
+        s.onerror=()=>{clearTimeout(t);rej(new Error('load error'));};
+        s.crossOrigin='anonymous';
+        s.src=url;
+        document.head.appendChild(s);
+      });
+      if(typeof ZXingBrowser!=='undefined'){
+        useNative=false; engineReady=true;
+        setBadge('✓ ZXing 스캐너','eb-ready');
+        return;
+      }
+    }catch(e){console.log('ZXing load failed:',url,e);}
+  }
+
+  // 모두 실패
+  setBadge('직접 입력 모드','eb-error');
+  document.getElementById('start-note').textContent=
+    '⚠️ 자동 스캔 미지원 브라우저\nSafari로 열거나 직접 입력을 이용해주세요.';
+}
+
+// ════════════════════════════════════════
+// 카메라
+// ════════════════════════════════════════
+async function startCam(){
+  document.getElementById('start-ov').style.display='none';
+  try{
+    if(currentStream)currentStream.getTracks().forEach(t=>t.stop());
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:facingMode},width:{ideal:1920},height:{ideal:1080}}
+    });
+    currentStream=stream;
+    const v=document.getElementById('video');
+    v.srcObject=stream;
+    v.onloadedmetadata=async()=>{
+      try{ await v.play(); }catch(e){}
+      startScanLoop(v);
+    };
+  }catch(e){
+    document.getElementById('start-ov').style.display='flex';
+    setBadge('카메라 권한 필요','eb-error');
+    showToast('카메라 오류: 권한을 허용해주세요');
+  }
+}
+
+function startScanLoop(video){
+  scanRunning=false; // 기존 루프 중단
+  if(!engineReady){ showToast('스캐너 엔진 없음 — 직접 입력을 이용해주세요'); return; }
+
+  if(useNative){
+    if(!scanCanvas){
+      scanCanvas=document.createElement('canvas');
+      scanCtx=scanCanvas.getContext('2d',{willReadFrequently:true});
+    }
+    scanRunning=true;
+    (async function loop(){
+      if(!scanRunning)return;
+      if(video.readyState>=video.HAVE_ENOUGH_DATA&&video.videoWidth>0){
+        scanCanvas.width=video.videoWidth;
+        scanCanvas.height=video.videoHeight;
+        scanCtx.drawImage(video,0,0);
+        try{
+          const res=await nativeDet.detect(scanCanvas);
+          res.forEach(r=>{ if(r.rawValue)tryAdd(r.rawValue); });
+        }catch(e){}
+      }
+      setTimeout(()=>{ if(scanRunning)requestAnimationFrame(loop); },350);
+    })();
+  } else if(typeof ZXingBrowser!=='undefined'){
+    try{
+      const reader=new ZXingBrowser.BrowserMultiFormatReader();
+      reader.decodeFromVideoElement(video,(result,err)=>{
+        if(result)tryAdd(result.getText());
+      });
+    }catch(e){ showToast('ZXing 오류 — 직접 입력을 이용해주세요'); }
+  }
+}
+
+function flipCam(){
+  scanRunning=false;
+  if(currentStream)currentStream.getTracks().forEach(t=>t.stop());
+  facingMode=facingMode==='environment'?'user':'environment';
+  setTimeout(startCam,300);
+}
+
+async function toggleTorch(){
+  if(!currentStream)return;
+  const track=currentStream.getVideoTracks()[0];
+  try{
+    torchOn=!torchOn;
+    await track.applyConstraints({advanced:[{torch:torchOn}]});
+    document.getElementById('torch-btn').classList.toggle('lit',torchOn);
+  }catch(e){showToast('플래시 미지원');torchOn=false;}
+}
+
+// ════════════════════════════════════════
+// 스캔 모드
+// ════════════════════════════════════════
+function setMode(m){
+  scanMode=m;
+  document.querySelectorAll('.chip').forEach((c,i)=>
+    c.classList.toggle('on',['model','order','serial','auto'][i]===m));
+  const h={model:'모델명 바코드',order:'오더번호(O/N) 바코드',
+    serial:'시리얼번호(S/N) 바코드',auto:'바코드 / QR 자동감지'};
+  document.getElementById('scan-hint').textContent=h[m]||h.auto;
+}
+
+// ════════════════════════════════════════
+// UI
+// ════════════════════════════════════════
+function flash(type){
+  const el=document.getElementById('fb');
+  el.className='fb '+type+' on';
+  setTimeout(()=>el.classList.remove('on'),180);
+}
+function updateStats(){
+  document.getElementById('s0').textContent=groups.length;
+  document.getElementById('s1').textContent=totalScans;
+  document.getElementById('s2').textContent=blocked;
+  document.getElementById('tb1-lbl').textContent='목록 ('+groups.length+')';
+}
+const TL={model:'모델명',order:'O/N',serial:'S/N',qr:'QR',other:'기타'};
+const BC={model:'bm',order:'bo',serial:'bs',qr:'bq',other:'bx'};
+function renderList(){
+  const el=document.getElementById('item-list');
+  const emp=document.getElementById('empty');
+  if(!groups.length){emp.style.display='';el.innerHTML='';el.appendChild(emp);return;}
+  emp.style.display='none';
+  el.innerHTML=[...groups].reverse().map((g,ri)=>{
+    const idx=groups.length-1-ri;
+    const complete=!!(g.model&&g.order&&g.serial);
+    const missing=[g.model?'':'모델',g.order?'':'O/N',g.serial?'':'S/N'].filter(Boolean);
+    const statusTxt=complete?'✓ 완료':missing.join('/')+ ' 미등록';
+    const rows=[];
+    if(g.model) rows.push(`<div class="irow"><span class="badge bm">모델명</span><span class="icode">${g.model}</span></div>`);
+    if(g.order) rows.push(`<div class="irow"><span class="badge bo">O/N</span><span class="icode">${g.order}</span></div>`);
+    if(g.serial)rows.push(`<div class="irow"><span class="badge bs">S/N</span><span class="icode">${g.serial}</span></div>`);
+    g.qr.forEach(q=>rows.push(`<div class="irow"><span class="badge bq">QR</span><span class="icode">${q.substring(0,36)}</span></div>`));
+    g.others.forEach(o=>rows.push(`<div class="irow"><span class="badge bx">기타</span><span class="icode">${o}</span></div>`));
+    return`<div class="item-group">
+      <div class="igh">
+        <div class="igh-l">
+          <div class="igh-num">${groups.length-ri}</div>
+          <div><div class="igh-model">${g.model||'(모델명 없음)'}</div>
+          ${g.yaskawa?`<div class="igh-series">${g.yaskawa.s} ${g.yaskawa.k}</div>`:''}</div>
+        </div>
+        <button class="del-g" onclick="removeGroup(${idx})">×</button>
+      </div>
+      <div class="irows">${rows.join('')}</div>
+      <div class="ifoot">
+        <span class="ifoot-time">${g.time}</span>
+        <span class="ifoot-st ${complete?'st-ok':'st-partial'}">${statusTxt}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function showLastCard(){
+  if(!groups.length)return;
+  const g=groups[groups.length-1];
+  const rows=[];
+  if(g.model) rows.push(`<div class="lc-row"><span class="lc-badge bm">모델명</span><span class="lc-code">${g.model.substring(0,26)}</span>${g.yaskawa?`<span class="lc-series">${g.yaskawa.s}</span>`:''}</div>`);
+  if(g.order) rows.push(`<div class="lc-row"><span class="lc-badge bo">O/N</span><span class="lc-code">${g.order}</span></div>`);
+  if(g.serial)rows.push(`<div class="lc-row"><span class="lc-badge bs">S/N</span><span class="lc-code">${g.serial}</span></div>`);
+  document.getElementById('lc-rows').innerHTML=rows.join('');
+  const card=document.getElementById('last-card');
+  card.classList.add('show');
+  clearTimeout(card._t);
+  card._t=setTimeout(()=>card.classList.remove('show'),5000);
+}
+function removeGroup(i){groups.splice(i,1);updateStats();renderList();}
+function clearAll(){
+  if(!groups.length)return;
+  if(!confirm('전체 목록을 삭제할까요?'))return;
+  groups.length=0;totalScans=0;blocked=0;pendingGid=null;
+  updateStats();renderList();
+}
+function showDup(code){
+  document.getElementById('dup-code').textContent=code;
+  document.getElementById('dup-ov').classList.add('open');
+}
+function closeDup(){document.getElementById('dup-ov').classList.remove('open');lastRaw='';lastRawAt=0;}
+
+// ════════════════════════════════════════
+// 내보내기
+// ════════════════════════════════════════
+function toCSV(){
+  const rows=[['번호','모델명','오더번호(O/N)','시리얼번호(S/N)','시리즈','종류','QR/기타','스캔시간']];
+  groups.forEach((g,i)=>rows.push([i+1,g.model||'',g.order||'',g.serial||'',
+    g.yaskawa?g.yaskawa.s:'',g.yaskawa?g.yaskawa.k:'',
+    [...g.qr,...g.others].join(' | '),g.time]));
+  return rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+}
+function dlCSV(){
+  if(!groups.length){showToast('스캔된 항목이 없습니다');return;}
+  const d=new Date();
+  const fn=`출하목록_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+toCSV()],{type:'text/csv;charset=utf-8;'}));
+  a.download=fn;a.click();URL.revokeObjectURL(a.href);
+  showToast('저장: '+fn);
+}
+function sendEmail(){
+  if(!groups.length){showToast('스캔된 항목이 없습니다');return;}
+  const to=document.getElementById('eto').value.trim();
+  const subj=document.getElementById('esubj').value.trim();
+  const note=document.getElementById('enote').value.trim();
+  const body=(note?note+'\n\n':'')+'=== 출하 목록 ===\n'+toCSV();
+  window.location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+}
+async function sendSheets(){
+  if(!groups.length){showToast('스캔된 항목이 없습니다');return;}
+  const url=document.getElementById('surl').value.trim();
+  if(!url){showToast('URL을 입력해주세요');return;}
+  showToast('전송 중...');
+  try{
+    await fetch(url,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({groups,exportedAt:new Date().toISOString()})});
+    showToast('전송 완료!');
+  }catch(e){showToast('전송 실패');}
+}
+
+// ════════════════════════════════════════
+// 토스트 / 키보드
+// ════════════════════════════════════════
+let _tt;
+function showToast(m){
+  const el=document.getElementById('toast');
+  el.textContent=m;el.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),3000);
+}
+document.getElementById('min').addEventListener('keydown',e=>{if(e.key==='Enter')addManual();});
+
+// 시작
+initEngine();
+</script>
+</body>
+</html>
