@@ -15,20 +15,18 @@
   --blue:#1a6fc4;--blueb:#e8f2fc;
   --green:#1e7e3c;--greenb:#e6f5ec;
   --red:#c0392b;--redb:#fdecea;
-  --amber:#a05c00;--amberb:#fff3e0;
-  --purple:#5c3d9e;--purpleb:#f0ecfc;
   --r:10px;--rs:7px;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#111;--sf:#1e1e1e;--sf2:#2a2a2a;--bd:rgba(255,255,255,.10);--bdm:rgba(255,255,255,.18);
   --tx:#f0f0f0;--t2:#aaa;--t3:#666;
   --blue:#5aabf7;--blueb:#0d2a45;--green:#4ecb71;--greenb:#0d2e1a;
-  --red:#f47c72;--redb:#2e0d0a;--amber:#ffb84d;--amberb:#2e1f00;
-  --purple:#b59ef5;--purpleb:#1e1440;
+  --red:#f47c72;--redb:#2e0d0a;
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;color:var(--tx);overflow-x:hidden}
 .page{display:none}.page.active{display:block}
+/* 탭바 */
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--sf);
   border-top:.5px solid var(--bd);display:flex;max-width:480px;margin:0 auto;
   padding-bottom:env(safe-area-inset-bottom)}
@@ -37,48 +35,43 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .tbtab.on{color:var(--blue)}
 .tbtab svg{width:22px;height:22px}
 .tbtab span{font-size:10px;font-weight:600}
+/* ── 스캔 페이지 ── */
 #page-scan{position:relative;height:100dvh;height:100vh;background:#000;overflow:hidden}
 #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .scan-ui{position:absolute;inset:0;display:flex;flex-direction:column;pointer-events:none}
-.scan-top{flex:0 0 20%;background:rgba(0,0,0,.5)}
-.scan-mid{display:flex;flex:0 0 45%}
+.scan-top{flex:0 0 18%;background:rgba(0,0,0,.5)}
+.scan-mid{display:flex;flex:0 0 46%}
 .scan-side{width:4%;background:rgba(0,0,0,.5)}
 .scan-window{flex:1;position:relative;overflow:hidden}
-/* 라벨 오버레이 프레임 — 실제 라벨처럼 한 박스 안에 3행 */
+/* 라벨 오버레이 박스 */
 .label-frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.label-box{width:92%;background:rgba(0,0,0,.55);border:1.5px solid rgba(255,255,255,.25);
+.label-box{width:93%;background:rgba(0,0,0,.6);border:1.5px solid rgba(255,255,255,.2);
   border-radius:8px;overflow:hidden;backdrop-filter:blur(2px)}
-.lf-row{display:flex;align-items:center;gap:0;border-bottom:1px solid rgba(255,255,255,.12)}
+.lf-row{display:flex;align-items:center;border-bottom:1px solid rgba(255,255,255,.1)}
 .lf-row:last-child{border-bottom:none}
-.lf-tag{font-size:9px;font-weight:700;padding:5px 7px;white-space:nowrap;
-  flex-shrink:0;min-width:46px;text-align:center;border-right:1px solid rgba(255,255,255,.12)}
-.lf-row.wait .lf-tag{background:rgba(239,68,68,.55);color:#fff}
+.lf-tag{font-size:9px;font-weight:700;padding:6px 7px;white-space:nowrap;
+  flex-shrink:0;min-width:46px;text-align:center;border-right:1px solid rgba(255,255,255,.1)}
+.lf-row.wait .lf-tag{background:rgba(239,68,68,.5);color:#fff}
 .lf-row.done .lf-tag{background:rgba(74,222,128,.55);color:#fff}
-.lf-val{font-size:9.5px;font-family:'Courier New',monospace;padding:5px 8px;
+.lf-val{font-size:9.5px;font-family:'Courier New',monospace;padding:6px 8px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.lf-row.wait .lf-val{color:rgba(255,255,255,.45)}
+.lf-row.wait .lf-val{color:rgba(255,255,255,.4)}
 .lf-row.done .lf-val{color:#fff;font-weight:600}
-.lf-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-right:7px}
+.lf-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-right:8px}
 .lf-row.wait .lf-dot{background:rgba(239,68,68,.8)}
 .lf-row.done .lf-dot{background:#4ade80}
+/* 스캔 빔 */
 .scan-beam{position:absolute;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);
   pointer-events:none;z-index:2;animation:beam 2s ease-in-out infinite}
 @keyframes beam{0%,100%{top:2%}50%{top:95%}}
+/* 하단 상태 영역 */
 .scan-bot{flex:1;background:rgba(0,0,0,.5);display:flex;flex-direction:column;
-  align-items:center;gap:10px;padding:14px 20px 10px;pointer-events:none}
-.scan-hint{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;text-align:center}
-.capture-btn{display:flex;align-items:center;gap:8px;padding:13px 32px;
-  background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.7);
-  color:#fff;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;
-  pointer-events:all;transition:background .15s;-webkit-tap-highlight-color:transparent}
-.capture-btn:active{background:rgba(255,255,255,.3)}
-.capture-btn.scanning{background:rgba(59,130,246,.5);border-color:#3b82f6;animation:pulse .6s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-.capture-status{font-size:12px;color:rgba(255,255,255,.6);text-align:center;padding:0 20px;line-height:1.4}
-.capture-status.ok{color:#4ade80;font-weight:600}
-.capture-status.err{color:#f87171;font-weight:600}
-
+  align-items:center;justify-content:center;gap:10px;padding:12px 20px;pointer-events:none}
+.scan-status{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;text-align:center;line-height:1.4}
+.scan-status.ok{color:#4ade80}
+.scan-status.err{color:#f87171}
+/* 카메라 버튼 */
 .cam-side-btns{position:absolute;top:16px;right:14px;display:flex;flex-direction:column;gap:10px;pointer-events:all}
 .cam-ico{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);
   border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -89,73 +82,55 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .eb-loading{background:rgba(251,191,36,.25);color:#fbbf24;border:1px solid rgba(251,191,36,.4)}
 .eb-ready{background:rgba(74,222,128,.2);color:#4ade80;border:1px solid rgba(74,222,128,.35)}
 .eb-error{background:rgba(248,113,113,.2);color:#f87171;border:1px solid rgba(248,113,113,.35)}
+/* 카메라 시작 오버레이 */
 .start-ov{position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:14px;background:rgba(0,0,0,.72)}
 .start-btn{padding:14px 32px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.6);
-  color:#fff;border-radius:var(--r);font-size:16px;cursor:pointer;display:flex;
-  align-items:center;gap:10px;font-weight:700;pointer-events:all}
+  color:#fff;border-radius:var(--r);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;gap:10px;font-weight:700;pointer-events:all}
 .start-note{font-size:13px;color:rgba(255,255,255,.55);text-align:center;padding:0 24px;line-height:1.55}
 .fb{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .1s}
 .fb.ok{background:rgba(34,197,94,.3)}.fb.err{background:rgba(220,53,53,.4)}.fb.on{opacity:1}
-
-
-
-.last-card{display:none;position:absolute;left:0;right:0;bottom:0;
-  background:rgba(15,15,15,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  padding:12px 16px calc(16px + env(safe-area-inset-bottom));
-  border-top:1px solid rgba(255,255,255,.12)}
-.last-card.show{display:block}
-.lc-title{font-size:10px;color:rgba(255,255,255,.45);font-weight:700;
-  text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.lc-rows{display:flex;flex-direction:column;gap:5px}
-.lc-row{display:flex;align-items:center;gap:8px}
-.lc-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
-.lc-code{font-size:13px;font-family:'Courier New',monospace;color:#fff;word-break:break-all;font-weight:600;flex:1}
-.lc-series{font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap;flex-shrink:0}
+/* ── 목록 페이지 ── */
 #page-list{padding-bottom:calc(62px + env(safe-area-inset-bottom));min-height:100vh}
 .list-hdr{display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px 10px;border-bottom:.5px solid var(--bd);
+  padding:13px 16px 10px;border-bottom:.5px solid var(--bd);
   background:var(--sf);position:sticky;top:0;z-index:10}
-.list-hdr h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
-.list-hdr h1 svg{width:20px;height:20px}
+.list-hdr h1{font-size:17px;font-weight:700}
 .clr-btn{font-size:12px;color:var(--red);background:none;border:.5px solid var(--red);
   padding:3px 11px;border-radius:20px;cursor:pointer}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px}
-.stat{background:var(--sf);border:.5px solid var(--bd);border-radius:var(--r);padding:10px 8px;text-align:center}
-.stat-n{font-size:24px;font-weight:700}.stat-n.red{color:var(--red)}
-.stat-l{font-size:11px;color:var(--t2);margin-top:1px}
-.manual{display:flex;gap:6px;padding:0 12px 12px}
-.manual input{flex:1;padding:9px 11px;font-size:14px;border:.5px solid var(--bdm);
+/* 통계 */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 12px}
+.stat{background:var(--sf);border:.5px solid var(--bd);border-radius:var(--r);padding:8px;text-align:center}
+.stat-n{font-size:22px;font-weight:700}.stat-n.red{color:var(--red)}
+.stat-l{font-size:10px;color:var(--t2);margin-top:1px}
+/* 수동 입력 */
+.manual{display:flex;gap:6px;padding:0 12px 10px}
+.manual input{flex:1;padding:8px 10px;font-size:13px;border:.5px solid var(--bdm);
   border-radius:var(--rs);background:var(--sf);color:var(--tx);outline:none}
 .manual input:focus{border-color:var(--blue)}
-.manual button{padding:9px 14px;font-size:13px;font-weight:700;border:.5px solid var(--bdm);
+.manual button{padding:8px 12px;font-size:12px;font-weight:700;border:.5px solid var(--bdm);
   border-radius:var(--rs);background:var(--sf);color:var(--tx);cursor:pointer;white-space:nowrap}
-.item-group{margin:0 12px 10px;background:var(--sf);border:.5px solid var(--bd);
-  border-radius:var(--r);overflow:hidden;animation:si .2s ease}
-@keyframes si{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
-.igh{display:flex;align-items:center;justify-content:space-between;
-  padding:10px 12px 8px;border-bottom:.5px solid var(--bd)}
-.igh-l{display:flex;align-items:center;gap:9px}
-.igh-num{width:24px;height:24px;border-radius:50%;background:var(--blueb);color:var(--blue);
-  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.igh-model{font-size:14px;font-weight:700;font-family:'Courier New',monospace}
-.igh-series{font-size:11px;color:var(--t2)}
-.del-g{background:none;border:none;font-size:22px;color:var(--t3);cursor:pointer;padding:0 4px;line-height:1}
-.irows{padding:8px 12px;display:flex;flex-direction:column;gap:6px}
-.irow{display:flex;align-items:center;gap:8px}
-.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
-.bm{background:var(--blueb);color:var(--blue)}
-.bo{background:var(--greenb);color:var(--green)}
-.bs{background:var(--purpleb);color:var(--purple)}
-.bq{background:var(--amberb);color:var(--amber)}
-.bx{background:var(--sf2);color:var(--t2)}
-.icode{font-size:12.5px;font-family:'Courier New',monospace;color:var(--tx);word-break:break-all;flex:1}
-.ifoot{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 10px}
-.ifoot-time{font-size:11px;color:var(--t3)}
-.ifoot-st{font-size:11px;font-weight:700}
-.st-ok{color:var(--green)}.st-partial{color:var(--amber)}
+/* 엑셀 테이블 */
+.tbl-wrap{overflow-x:auto;padding:0 12px 12px}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:480px}
+.tbl thead tr{background:var(--sf2);position:sticky;top:0}
+.tbl th{padding:8px 10px;text-align:left;font-weight:700;font-size:11px;
+  color:var(--t2);border:.5px solid var(--bd);white-space:nowrap}
+.tbl td{padding:7px 10px;border:.5px solid var(--bd);color:var(--tx);vertical-align:middle}
+.tbl tbody tr:hover{background:var(--sf2)}
+.tbl tbody tr:nth-child(even){background:rgba(0,0,0,.02)}
+@media(prefers-color-scheme:dark){.tbl tbody tr:nth-child(even){background:rgba(255,255,255,.02)}}
+.tbl-num{color:var(--t3);font-size:11px;text-align:center}
+.tbl-model{font-family:'Courier New',monospace;font-weight:700;font-size:11px}
+.tbl-code{font-family:'Courier New',monospace;font-size:11px}
+.tbl-series{font-size:10px;color:var(--t2)}
+.st-ok{color:var(--green);font-weight:700;font-size:11px}
+.st-partial{color:#a05c00;font-weight:700;font-size:11px}
+.del-row{background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:0 4px}
 .empty-st{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:13px;line-height:1.9}
-.empty-st svg{width:44px;height:44px;opacity:.3;display:block;margin:0 auto 12px}
+.empty-st svg{width:40px;height:40px;opacity:.3;display:block;margin:0 auto 10px}
+/* ── 내보내기 페이지 ── */
 #page-export{padding:14px 16px;padding-bottom:calc(80px + env(safe-area-inset-bottom));min-height:100vh}
 #page-export h2{font-size:16px;font-weight:700;margin-bottom:14px}
 .exp-btn{width:100%;padding:14px;font-size:14px;font-weight:700;border-radius:var(--r);
@@ -164,25 +139,26 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .exp-btn svg{width:20px;height:20px;flex-shrink:0}
 .exp-btn:active{opacity:.7}
 .exp-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-.exp-btn.green{background:var(--green);color:#fff;border-color:var(--green)}
-.sec-lbl{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 10px}
+.exp-btn.green-btn{background:var(--green);color:#fff;border-color:var(--green)}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px}
 .flbl{display:block;font-size:11px;font-weight:700;color:var(--t2);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
 .finp{width:100%;padding:10px 12px;font-size:14px;border:.5px solid var(--bdm);
   border-radius:var(--rs);background:var(--sf2);color:var(--tx);outline:none;font-family:inherit}
 .finp:focus{border-color:var(--blue)}
 textarea.finp{resize:none;height:70px}
 .fnote{font-size:12px;color:var(--t3);margin-top:8px;line-height:1.55}
+/* 중복 모달 */
 .dup-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center}
 .dup-ov.open{display:flex}
 .dup-box{background:var(--sf);border-radius:20px;padding:2rem 1.5rem 1.5rem;width:88%;max-width:340px;text-align:center}
-.dup-ico{width:64px;height:64px;border-radius:50%;background:var(--redb);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
-.dup-ico svg{width:32px;height:32px;color:var(--red)}
+.dup-ico{width:60px;height:60px;border-radius:50%;background:var(--redb);display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.dup-ico svg{width:30px;height:30px;color:var(--red)}
 .dup-box h2{font-size:17px;font-weight:700;margin-bottom:6px}
-.dup-box p{font-size:13px;color:var(--t2);margin-bottom:14px;line-height:1.5}
-.dup-code-card{background:var(--sf2);border-radius:var(--rs);padding:10px 14px;text-align:left;margin-bottom:4px}
+.dup-box p{font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.5}
+.dup-card{background:var(--sf2);border-radius:var(--rs);padding:10px 14px;text-align:left;margin-bottom:4px}
 .dup-code-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:3px}
 .dup-code-val{font-size:13px;font-family:'Courier New',monospace;font-weight:700;color:var(--red);word-break:break-all}
-.dup-ok{width:100%;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;border:none;background:var(--red);color:#fff;margin-top:12px}
+.dup-ok{width:100%;padding:12px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;border:none;background:var(--red);color:#fff;margin-top:10px}
 .toast{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
   background:rgba(20,20,20,.92);color:#fff;padding:10px 20px;border-radius:24px;
   font-size:13px;font-weight:500;z-index:400;opacity:0;transition:opacity .22s;
@@ -192,6 +168,7 @@ textarea.finp{resize:none;height:70px}
 </head>
 <body>
 
+<!-- ══ 스캔 페이지 ══ -->
 <div id="page-scan" class="page active">
   <video id="video" autoplay playsinline muted></video>
   <div class="scan-ui">
@@ -223,12 +200,7 @@ textarea.finp{resize:none;height:70px}
       <div class="scan-side"></div>
     </div>
     <div class="scan-bot">
-      <div class="scan-hint" id="scan-hint">라벨 전체를 프레임에 맞추고 캡처하세요</div>
-      <button class="capture-btn" id="capture-btn" onclick="captureAndScan()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M20 7h-3.5l-1.5-2h-6L7.5 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>
-        캡처하여 스캔
-      </button>
-      <div class="capture-status" id="capture-status">라벨 전체가 프레임 안에 들어오게 해주세요</div>
+      <div class="scan-status" id="scan-status">라벨을 프레임 안에 맞춰주세요</div>
     </div>
   </div>
   <div class="engine-badge eb-loading" id="eng-badge">준비 중...</div>
@@ -248,19 +220,12 @@ textarea.finp{resize:none;height:70px}
     <div class="start-note" id="start-note">카메라 권한이 필요합니다</div>
   </div>
   <div class="fb" id="fb"></div>
-
-  <div class="last-card" id="last-card">
-    <div class="lc-title">방금 등록</div>
-    <div class="lc-rows" id="lc-rows"></div>
-  </div>
 </div>
 
+<!-- ══ 목록 페이지 ══ -->
 <div id="page-list" class="page">
   <div class="list-hdr">
-    <h1>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      스캔 목록
-    </h1>
+    <h1>스캔 목록</h1>
     <button class="clr-btn" onclick="clearAll()">전체 삭제</button>
   </div>
   <div class="stats">
@@ -272,7 +237,7 @@ textarea.finp{resize:none;height:70px}
     <input type="text" id="min" placeholder="바코드 직접 입력 후 Enter">
     <button onclick="addManual()">+ 추가</button>
   </div>
-  <div id="item-list">
+  <div class="tbl-wrap" id="tbl-wrap">
     <div class="empty-st" id="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
       스캔된 항목이 없습니다<br>카메라 탭에서 바코드를 스캔하세요
@@ -280,11 +245,16 @@ textarea.finp{resize:none;height:70px}
   </div>
 </div>
 
+<!-- ══ 내보내기 페이지 ══ -->
 <div id="page-export" class="page">
   <h2>내보내기</h2>
-  <button class="exp-btn primary" onclick="dlCSV()">
+  <button class="exp-btn primary" onclick="dlXLSX()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-    CSV / 엑셀 다운로드
+    엑셀(.xlsx) 다운로드
+  </button>
+  <button class="exp-btn" onclick="dlCSV()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    CSV 다운로드
   </button>
   <div class="sec-lbl">이메일 전송</div>
   <label class="flbl">받는 사람</label>
@@ -298,15 +268,16 @@ textarea.finp{resize:none;height:70px}
     메일 앱 열기
   </button>
   <p class="fnote">※ 기기의 메일 앱이 열리며 CSV 데이터가 본문에 포함됩니다.</p>
-  <div class="sec-lbl" style="margin-top:20px">Google Sheets</div>
+  <div class="sec-lbl" style="margin-top:18px">Google Sheets</div>
   <label class="flbl">Apps Script 웹훅 URL</label>
   <input class="finp" type="url" id="surl" placeholder="https://script.google.com/macros/s/...">
-  <button class="exp-btn green" style="margin-top:10px" onclick="sendSheets()">
+  <button class="exp-btn green-btn" style="margin-top:10px" onclick="sendSheets()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
     Google Sheets 전송
   </button>
 </div>
 
+<!-- 탭바 -->
 <div class="tabbar">
   <button class="tbtab on" id="tb0" onclick="goPage(0)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
@@ -322,38 +293,42 @@ textarea.finp{resize:none;height:70px}
   </button>
 </div>
 
+<!-- 중복 모달 -->
 <div class="dup-ov" id="dup-ov">
   <div class="dup-box">
     <div class="dup-ico">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     </div>
     <h2>이미 리스트업 된 제품입니다</h2>
-    <p>해당 바코드는 이미 목록에 등록되어<br>있습니다. 추가되지 않았습니다.</p>
-    <div class="dup-code-card">
-      <div class="dup-code-lbl">스캔된 코드</div>
+    <p>동일한 시리얼번호가 이미 등록되어<br>있습니다. 추가되지 않았습니다.</p>
+    <div class="dup-card">
+      <div class="dup-code-lbl">시리얼번호 (S/N)</div>
       <div class="dup-code-val" id="dup-code"></div>
     </div>
     <button class="dup-ok" onclick="closeDup()">확인</button>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
+<!-- SheetJS for xlsx export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <script>
-// ══ 상태 ════════════════════════════════
+// ══ 상태 ════════════════════════════════════
 const groups = [];
-let scanMode = 'auto', torchOn = false;
-let lastRaw = '', lastRawAt = 0, totalScans = 0, blocked = 0;
+let torchOn = false;
+let lastCodes = new Map(); // code -> timestamp (중복 연속 인식 방지)
+let totalScans = 0, blocked = 0;
 let engineReady = false, useNative = false, nativeDet = null;
 let scanRunning = false, scanCanvas = null, scanCtx = null;
 let currentStream = null, facingMode = 'environment';
 
-// ══ 버퍼 (라벨 1장 = 1그룹) ════════════
-let buf = { model:null, order:null, serial:null, qr:[], others:[] };
-let bufTimer = null;
-const BUF_TIMEOUT = 4000;
+// 현재 조립 중인 버퍼 — 연속 프레임에서 수집
+let buf = { model:null, order:null, serial:null };
+let bufStartTime = 0;      // 버퍼 첫 코드 들어온 시간
+const BUF_MAX_MS = 3000;   // 3초 내 코드들만 같은 라벨로 간주
 
-// ══ 페이지 ══════════════════════════════
+// ══ 페이지 전환 ══════════════════════════════
 function goPage(n) {
   document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===n));
   document.querySelectorAll('.tbtab').forEach((t,i) => t.classList.toggle('on', i===n));
@@ -363,7 +338,7 @@ function goPage(n) {
   }
 }
 
-// ══ YASKAWA 감지 ═════════════════════════
+// ══ YASKAWA 모델 감지 ═══════════════════════
 function detectY(c) {
   if (/^SGD7S-/i.test(c)) return {s:'SIGMA-7',  k:'서보팩'};
   if (/^SGD7W-/i.test(c)) return {s:'SIGMA-7W', k:'서보팩'};
@@ -375,51 +350,32 @@ function detectY(c) {
   return null;
 }
 
-// ══ 코드 전처리 (체크문자 제거 등) ══════════
+// ══ 코드 전처리 (체크문자 제거) ═════════════
 function preprocess(raw) {
   let c = raw.trim();
-
-  // QR코드가 "cnt,itemcode,SN," 형태로 읽히는 경우 분해해서 S/N 추출
-  // 예) "000001,027101,D0251K348710016,"
-  if (/^[0-9,A-Z]+,$/.test(c) || c.includes(',')) {
-    const parts = c.split(',').map(p => p.trim()).filter(Boolean);
-    for (const p of parts) {
-      // S/N 패턴이 포함된 부분 찾기
-      if (/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}/.test(p)) {
-        return p.replace(/[A-Z]$/, ''); // 끝 체크문자 제거
-      }
-    }
-    return c; // 못 찾으면 원본 반환
-  }
-
-  // 바코드 끝 체크문자 제거
-  // S/N 패턴 + 끝에 알파벳 1자 → 제거 (예: D0251K348710016S → D0251K348710016)
+  // S/N 끝 체크문자 제거 (예: D0251K348710016S → D0251K348710016)
   const snMatch = c.match(/^([A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,})[A-Z]$/);
   if (snMatch) return snMatch[1];
-
-  // O/N 패턴 + 끝에 알파벳 1자 → 제거 (예: R23980-339E → R23980-339)
+  // O/N 끝 체크문자 제거 (예: R23980-339E → R23980-339)
   const onMatch = c.match(/^([A-Z0-9]{2,6}-[0-9]{1,4})[A-Z]$/);
   if (onMatch) return onMatch[1];
-
-  // 모델명 끝 'C' 제거 (히든 체크문자 — 예: SGD7S-R90A00AC → SGD7S-R90A00A)
-  // YASKAWA 모델명 패턴 + 끝 C
-  if (/^SG[DM][A-Z0-9].*[A-Z0-9]C$/.test(c) && c.length > 8) {
-    return c.slice(0, -1);
-  }
-
+  // 모델명 끝 C 제거 (히든 체크문자)
+  if (/^SG[DM][A-Z0-9].*[A-Z0-9]C$/.test(c) && c.length > 8) return c.slice(0, -1);
   return c;
 }
 
-// ══ 코드 분류 ════════════════════════════
+// ══ 코드 분류 ════════════════════════════════
 function classify(raw) {
-  // 접두어 명시
+  // QR 완전 무시
+  if (raw.includes(',') || raw.startsWith('http') || raw.length > 50) return {type:'ignore', val:''};
+
   if (/^O\/N\s*:/i.test(raw)) return {type:'order',  val:preprocess(raw.replace(/^O\/N\s*:\s*/i,'').trim())};
   if (/^S\/N\s*:/i.test(raw)) return {type:'serial', val:preprocess(raw.replace(/^S\/N\s*:\s*/i,'').trim())};
 
   const c = preprocess(raw.trim());
-  if (scanMode !== 'auto') return {type:scanMode, val:c};
+  if (!c) return {type:'ignore', val:''};
 
-  // YASKAWA 모델명 — 최우선
+  // YASKAWA 모델명
   if (/^SGD7[SW]-/i.test(c))  return {type:'model', val:c};
   if (/^SGDV-/i.test(c))       return {type:'model', val:c};
   if (/^SGDS-/i.test(c))       return {type:'model', val:c};
@@ -427,21 +383,17 @@ function classify(raw) {
   if (/^SGMJV-|^SGMAV-|^SGMPS-/i.test(c)) return {type:'model', val:c};
   if (/^SGM[A-Z]{1,2}[0-9]-/i.test(c))    return {type:'model', val:c};
 
-  // S/N: 알파벳1~2 + 숫자3~4 + 알파벳1~2 + 숫자8이상
+  // S/N
   if (/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}$/.test(c)) return {type:'serial', val:c};
 
-  // O/N: 영숫자2~6 + 하이픈 + 숫자1~4
+  // O/N
   if (/^[A-Z0-9]{2,6}-[0-9]{1,4}$/.test(c)) return {type:'order', val:c};
 
-  // QR / 긴 문자열
-  if (c.startsWith('http') || c.length > 40) return {type:'qr', val:c};
-
-  // 분류 불가 → 무시 (기타로 쌓이지 않게)
-  return {type:'ignore', val:c};
+  return {type:'ignore', val:''};
 }
 
-// ══ 라벨 오버레이 업데이트 ══════════════
-function updateProgress() {
+// ══ 라벨 오버레이 UI ══════════════════════════
+function updateOverlay() {
   ['model','order','serial'].forEach(k => {
     const val = buf[k];
     const row = document.getElementById('lf-'+k);
@@ -456,127 +408,100 @@ function updateProgress() {
   });
 }
 
-function hideProgress() {
-  ['model','order','serial'].forEach(k => {
-    const row = document.getElementById('lf-'+k);
-    const valEl = document.getElementById('lf-val-'+k);
-    row.className = 'lf-row wait';
-    valEl.textContent = '대기중...';
-  });
+function resetOverlay() {
+  buf = {model:null, order:null, serial:null};
+  bufStartTime = 0;
+  updateOverlay();
+  setScanStatus('라벨을 프레임 안에 맞춰주세요', '');
 }
 
-// ══ 버퍼 flush (그룹 등록) ════════════════
-function flushBuf() {
-  const hasData = buf.model || buf.order || buf.serial || buf.qr.length || buf.others.length;
-  if (!hasData) return;
-
-  // S/N 중복 체크 (같은 시리얼은 절대 중복 등록 안 됨)
-  if (buf.serial && groups.find(g => g.serial === buf.serial)) {
-    flash('err');
-    showDup(buf.serial + ' (이미 등록된 S/N)');
-    buf = {model:null, order:null, serial:null, qr:[], others:[]};
-    hideProgress();
-    return;
-  }
-  // 모델+오더 동일 중복 체크
-  if (buf.model && buf.order && groups.find(g => g.model === buf.model && g.order === buf.order)) {
-    flash('err');
-    showDup(buf.model + ' / ' + buf.order + ' (이미 등록)');
-    buf = {model:null, order:null, serial:null, qr:[], others:[]};
-    hideProgress();
-    return;
-  }
-
-  const g = {
-    id: Date.now(),
-    model:  buf.model,
-    order:  buf.order,
-    serial: buf.serial,
-    qr:     [...buf.qr],
-    others: [...buf.others],
-    yaskawa: buf.model ? detectY(buf.model) : null,
-    time: new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
-  };
-  groups.push(g);
-  flash('ok');
-  updateStats();
-  renderList();
-  showLastCard();
-
-  const cnt = [buf.model, buf.order, buf.serial].filter(Boolean).length;
-  showToast('✓ 등록완료 (' + cnt + '/3 항목)');
-
-  buf = {model:null, order:null, serial:null, qr:[], others:[]};
-  hideProgress();
+function setScanStatus(msg, cls) {
+  const el = document.getElementById('scan-status');
+  el.textContent = msg;
+  el.className = 'scan-status' + (cls ? ' '+cls : '');
 }
 
-// ══ 항목 추가 ════════════════════════════
-function tryAdd(raw) {
+// ══ 핵심: 연속 프레임에서 코드 수집 → 3개 완성 시 등록 ══
+function feedCode(raw) {
   const now = Date.now();
-  if (raw === lastRaw && now - lastRawAt < 1500) return;
-  lastRaw = raw; lastRawAt = now;
-
   const {type, val} = classify(raw);
+  if (type === 'ignore' || !val) return;
 
-  // 분류 불가 코드는 완전 무시
-  if (type === 'ignore') return;
+  // 같은 코드 2초 내 중복 무시
+  const lastSeen = lastCodes.get(val) || 0;
+  if (now - lastSeen < 2000) return;
+  lastCodes.set(val, now);
 
   totalScans++;
   updateStats();
 
-  // 버퍼 내 중복 무시
-  if (type==='model'  && buf.model  === val) return;
-  if (type==='order'  && buf.order  === val) return;
-  if (type==='serial' && buf.serial === val) return;
-  if (type==='qr'     && buf.qr.includes(val)) return;
-  if (type==='other'  && buf.others.includes(val)) return;
+  // 버퍼가 오래됐으면 (3초 초과) 리셋
+  if (bufStartTime > 0 && now - bufStartTime > BUF_MAX_MS) {
+    resetOverlay();
+  }
 
-  // 전체 그룹 중복 체크 (model/order/serial만)
-  if ((type==='model'||type==='order'||type==='serial') && isDup(val, type)) {
+  // S/N 중복 체크
+  if (type === 'serial' && groups.some(g => g.serial === val)) {
     blocked++;
+    updateStats();
     flash('err');
     showDup(val);
-    updateStats();
     return;
   }
 
-  // 버퍼에 추가
-  if      (type==='model')  buf.model  = val;
-  else if (type==='order')  buf.order  = val;
-  else if (type==='serial') buf.serial = val;
-  else if (type==='qr')     buf.qr.push(val);
-  else                      buf.others.push(val);
+  // 버퍼에 추가 (이미 있으면 무시 — 같은 라벨 안에서 같은 값 중복 방지)
+  if (type === 'model'  && !buf.model)  { buf.model  = val; if (!bufStartTime) bufStartTime = now; }
+  if (type === 'order'  && !buf.order)  { buf.order  = val; if (!bufStartTime) bufStartTime = now; }
+  if (type === 'serial' && !buf.serial) { buf.serial = val; if (!bufStartTime) bufStartTime = now; }
 
-  updateProgress();
+  updateOverlay();
 
-  // 수동 입력: 3개 모두 있으면 즉시 등록
+  // 상태 메시지
+  const done = [buf.model?'모델✓':'모델', buf.order?'O/N✓':'O/N', buf.serial?'S/N✓':'S/N'];
+  const cnt = [buf.model, buf.order, buf.serial].filter(Boolean).length;
+  setScanStatus(done.join('  ') + `  (${cnt}/3)`, cnt === 3 ? 'ok' : '');
+
+  // 3개 완성 → 즉시 등록
   if (buf.model && buf.order && buf.serial) {
-    clearTimeout(bufTimer);
-    bufTimer = null;
-    setTimeout(flushBuf, 200);
+    setTimeout(registerGroup, 400);
+  }
+}
+
+function registerGroup() {
+  if (!buf.model || !buf.order || !buf.serial) return;
+  // 등록 직전 S/N 재확인
+  if (groups.some(g => g.serial === buf.serial)) {
+    flash('err');
+    showDup(buf.serial);
+    resetOverlay();
     return;
   }
-  // 수동 입력: 10초 대기 후 있는 것만 등록
-  clearTimeout(bufTimer);
-  bufTimer = setTimeout(flushBuf, 10000);
+  const g = {
+    id: Date.now(),
+    model:   buf.model,
+    order:   buf.order,
+    serial:  buf.serial,
+    yaskawa: detectY(buf.model),
+    time:    new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+  };
+  groups.push(g);
+  flash('ok');
+  updateStats();
+  renderTable();
+  showToast('✓ 등록: ' + g.model + ' / ' + g.serial.substring(0,10)+'…');
+  setScanStatus('✓ 등록 완료! 다음 라벨을 스캔하세요', 'ok');
+  setTimeout(resetOverlay, 2000);
 }
 
-function isDup(val, type) {
-  // S/N만 중복 차단 — 모델명·O/N은 동일 모델 여러 개 출하 가능하므로 허용
-  if (type === 'serial') {
-    return groups.some(g => g.serial === val);
-  }
-  return false;
-}
-
+// ══ 수동 입력 ════════════════════════════════
 function addManual() {
   const v = document.getElementById('min').value.trim();
   if (!v) return;
-  tryAdd(v);
+  feedCode(v);
   document.getElementById('min').value = '';
 }
 
-// ══ 엔진 초기화 ══════════════════════════
+// ══ 엔진 초기화 ══════════════════════════════
 function setBadge(msg, cls) {
   const el = document.getElementById('eng-badge');
   el.textContent = msg; el.className = 'engine-badge ' + cls;
@@ -584,10 +509,9 @@ function setBadge(msg, cls) {
 
 async function initEngine() {
   setBadge('준비 중...', 'eb-loading');
-
   if ('BarcodeDetector' in window) {
     try {
-      const fmts = ['qr_code','code_128','code_39','ean_13','ean_8','data_matrix'];
+      const fmts = ['code_128','code_39','ean_13','ean_8','code_93','data_matrix'];
       nativeDet = new BarcodeDetector({formats: fmts});
       const c = document.createElement('canvas'); c.width=2; c.height=2;
       await nativeDet.detect(c);
@@ -596,41 +520,32 @@ async function initEngine() {
       return;
     } catch(e) { nativeDet = null; }
   }
-
   if (typeof ZXingBrowser !== 'undefined') {
     useNative = false; engineReady = true;
     setBadge('✓ ZXing 스캐너', 'eb-ready');
     return;
   }
-
-  const cdns = [
-    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
-    'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js',
-  ];
+  const cdns = ['https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
+                 'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js'];
   for (const url of cdns) {
     try {
       await new Promise((res,rej) => {
         const s = document.createElement('script');
-        const t = setTimeout(() => rej(new Error('timeout')), 6000);
+        const t = setTimeout(() => rej(), 6000);
         s.onload = () => { clearTimeout(t); setTimeout(res, 200); };
-        s.onerror = () => { clearTimeout(t); rej(new Error('load error')); };
-        s.crossOrigin = 'anonymous';
-        s.src = url;
-        document.head.appendChild(s);
+        s.onerror = () => { clearTimeout(t); rej(); };
+        s.src = url; document.head.appendChild(s);
       });
       if (typeof ZXingBrowser !== 'undefined') {
         useNative = false; engineReady = true;
-        setBadge('✓ ZXing 스캐너', 'eb-ready');
-        return;
+        setBadge('✓ ZXing 스캐너', 'eb-ready'); return;
       }
-    } catch(e) { console.log('ZXing load failed:', url, e); }
+    } catch(e) {}
   }
-
   setBadge('직접 입력 모드', 'eb-error');
-  document.getElementById('start-note').textContent = '⚠️ 자동 스캔 미지원\nSafari로 열거나 직접 입력을 이용해주세요.';
 }
 
-// ══ 카메라 ═══════════════════════════════
+// ══ 카메라 + 연속 스캔 루프 ═════════════════
 async function startCam() {
   document.getElementById('start-ov').style.display = 'none';
   try {
@@ -643,155 +558,51 @@ async function startCam() {
     v.srcObject = stream;
     v.onloadedmetadata = async () => {
       try { await v.play(); } catch(e) {}
-      startScanLoop(v);
+      startLoop(v);
     };
   } catch(e) {
     document.getElementById('start-ov').style.display = 'flex';
     setBadge('카메라 권한 필요', 'eb-error');
-    showToast('카메라 오류: 권한을 허용해주세요');
   }
 }
 
-function startScanLoop(video) {
-  // 캡처 방식: 연속 루프 없음, 사용자가 캡처 버튼 누를 때만 스캔
-  // 카메라가 켜지면 캡처 버튼 활성화
-  document.getElementById('capture-btn').style.display = 'flex';
-  if (!engineReady) {
-    setCaptureStatus('스캐너 준비 중... 잠시 후 다시 시도해주세요', 'err');
-  }
-}
-
-// ── 캡처 후 한 프레임에서 모든 바코드 동시 추출 ──────────────────────────
-async function captureAndScan() {
-  const video = document.getElementById('video');
-  if (!video.srcObject || video.readyState < video.HAVE_ENOUGH_DATA) {
-    setCaptureStatus('카메라가 준비되지 않았습니다', 'err');
-    return;
-  }
-  if (!engineReady) {
-    setCaptureStatus('스캐너 엔진이 준비되지 않았습니다', 'err');
-    return;
-  }
-
-  const btn = document.getElementById('capture-btn');
-  btn.classList.add('scanning');
-  setCaptureStatus('스캔 중...', '');
-
-  // 현재 프레임 캡처
+function startLoop(video) {
+  scanRunning = true;
   if (!scanCanvas) {
     scanCanvas = document.createElement('canvas');
     scanCtx = scanCanvas.getContext('2d', {willReadFrequently:true});
   }
-  scanCanvas.width  = video.videoWidth;
-  scanCanvas.height = video.videoHeight;
-  scanCtx.drawImage(video, 0, 0);
 
-  // 캡처된 한 이미지에서 모든 바코드 동시 추출
-  let codes = [];
-  try {
-    if (useNative && nativeDet) {
-      const results = await nativeDet.detect(scanCanvas);
-      codes = results.map(r => r.rawValue).filter(Boolean);
-    } else if (typeof ZXingBrowser !== 'undefined') {
-      // ZXing은 한번에 하나만 읽으므로 여러 번 시도
-      codes = await zxingMultiScan(scanCanvas);
-    }
-  } catch(e) {
-    console.error('Scan error:', e);
-  }
+  if (useNative && nativeDet) {
+    // ── 네이티브: 매 프레임마다 모든 바코드 동시 감지 ──
+    (async function loop() {
+      if (!scanRunning) return;
+      if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+        scanCanvas.width  = video.videoWidth;
+        scanCanvas.height = video.videoHeight;
+        scanCtx.drawImage(video, 0, 0);
+        try {
+          const results = await nativeDet.detect(scanCanvas);
+          // 한 프레임에서 감지된 모든 바코드를 한번에 처리
+          if (results.length > 0) {
+            // 같은 프레임의 코드들 → 타임스탬프 리셋 방지를 위해 일괄 처리
+            const frameCodes = results.map(r => r.rawValue).filter(Boolean);
+            frameCodes.forEach(c => feedCode(c));
+          }
+        } catch(e) {}
+      }
+      setTimeout(() => { if (scanRunning) requestAnimationFrame(loop); }, 400);
+    })();
 
-  btn.classList.remove('scanning');
-
-  if (!codes.length) {
-    flash('err');
-    setCaptureStatus('바코드를 찾지 못했습니다. 더 가까이 대주세요', 'err');
-    return;
-  }
-
-  // 같은 프레임에서 나온 코드들을 한 번에 처리
-  const result = processCapture(codes);
-  if (result.registered) {
-    setCaptureStatus('✓ 등록 완료! 다음 라벨을 스캔하세요', 'ok');
-  } else if (result.missing.length > 0) {
-    setCaptureStatus('미인식: ' + result.missing.join(', ') + ' — 다시 시도해주세요', 'err');
-  }
-}
-
-// 캡처된 코드 배열을 한 품목으로 처리
-function processCapture(codes) {
-  // 버퍼 초기화 (새 캡처마다 깨끗하게 시작)
-  buf = {model:null, order:null, serial:null, qr:[], others:[]};
-
-  for (const raw of codes) {
-    const {type, val} = classify(raw);
-    if (type === 'ignore') continue;
-    if (type === 'model'  && !buf.model)  buf.model  = val;
-    else if (type === 'order'  && !buf.order)  buf.order  = val;
-    else if (type === 'serial' && !buf.serial) buf.serial = val;
-    else if (type === 'qr')     buf.qr.push(val);
-  }
-
-  updateProgress();
-
-  // S/N 중복 체크
-  if (buf.serial && isDup(buf.serial, 'serial')) {
-    flash('err');
-    showDup(buf.serial);
-    buf = {model:null, order:null, serial:null, qr:[], others:[]};
-    hideProgress();
-    return {registered:false, missing:['S/N 중복']};
-  }
-
-  // 3개 모두 있으면 즉시 등록
-  if (buf.model && buf.order && buf.serial) {
-    setTimeout(flushBuf, 100);
-    return {registered:true, missing:[]};
-  }
-
-  // 부족한 항목 표시
-  const missing = [];
-  if (!buf.model)  missing.push('모델명');
-  if (!buf.order)  missing.push('O/N');
-  if (!buf.serial) missing.push('S/N');
-  return {registered:false, missing};
-}
-
-// ZXing으로 한 이미지에서 최대한 많은 바코드 추출
-async function zxingMultiScan(canvas) {
-  const found = new Set();
-  const reader = new ZXingBrowser.BrowserMultiFormatReader();
-  // 여러 힌트 형식으로 여러 번 시도
-  for (let attempt = 0; attempt < 6; attempt++) {
+  } else if (typeof ZXingBrowser !== 'undefined') {
+    // ── ZXing: decodeFromVideoElement ──
     try {
-      const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
-      const luminanceSource = new ZXingBrowser.ZXingBrowser.BinaryBitmap(
-        new ZXingBrowser.ZXingBrowser.GlobalHistogramBinarizer(
-          new ZXingBrowser.ZXingBrowser.RGBLuminanceSource(imageData.data, canvas.width, canvas.height)
-        )
-      );
-      // ZXing single decode per attempt
-      const result = await reader.decodeFromImageElement(canvas);
-      if (result) found.add(result.getText());
-    } catch(e) { break; }
+      const reader = new ZXingBrowser.BrowserMultiFormatReader();
+      reader.decodeFromVideoElement(video, (result, err) => {
+        if (result) feedCode(result.getText());
+      });
+    } catch(e) { setBadge('ZXing 오류', 'eb-error'); }
   }
-  // ZXing 단순 방식: canvas를 blob으로 변환해서 decodeFromImageUrl 사용
-  if (found.size === 0) {
-    try {
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
-      const url = URL.createObjectURL(blob);
-      const r = new ZXingBrowser.BrowserMultiFormatReader();
-      const res = await r.decodeFromImageUrl(url);
-      if (res) found.add(res.getText());
-      URL.revokeObjectURL(url);
-    } catch(e) {}
-  }
-  return [...found];
-}
-
-function setCaptureStatus(msg, cls) {
-  const el = document.getElementById('capture-status');
-  el.textContent = msg;
-  el.className = 'capture-status' + (cls ? ' '+cls : '');
 }
 
 function flipCam() {
@@ -811,14 +622,11 @@ async function toggleTorch() {
   } catch(e) { showToast('플래시 미지원'); torchOn = false; }
 }
 
-// ══ 스캔 모드 (고정: auto) ═══════════════
-function setMode(m) { scanMode = 'auto'; }
-
-// ══ UI ══════════════════════════════════
+// ══ UI ══════════════════════════════════════
 function flash(type) {
   const el = document.getElementById('fb');
   el.className = 'fb ' + type + ' on';
-  setTimeout(() => el.classList.remove('on'), 180);
+  setTimeout(() => el.classList.remove('on'), 200);
 }
 function updateStats() {
   document.getElementById('s0').textContent = groups.length;
@@ -826,74 +634,111 @@ function updateStats() {
   document.getElementById('s2').textContent = blocked;
   document.getElementById('tb1-lbl').textContent = '목록 (' + groups.length + ')';
 }
-function renderList() {
-  const el = document.getElementById('item-list');
-  const emp = document.getElementById('empty');
-  if (!groups.length) { emp.style.display=''; el.innerHTML=''; el.appendChild(emp); return; }
+
+// ══ 엑셀 테이블 렌더링 ═══════════════════════
+function renderTable() {
+  const wrap = document.getElementById('tbl-wrap');
+  const emp  = document.getElementById('empty');
+  if (!groups.length) {
+    wrap.innerHTML = '';
+    wrap.appendChild(emp);
+    emp.style.display = '';
+    return;
+  }
   emp.style.display = 'none';
-  el.innerHTML = [...groups].reverse().map((g, ri) => {
-    const idx = groups.length - 1 - ri;
+
+  const rows = [...groups].map((g, i) => {
     const complete = !!(g.model && g.order && g.serial);
-    const missing = [g.model?'':'모델', g.order?'':'O/N', g.serial?'':'S/N'].filter(Boolean);
-    const statusTxt = complete ? '✓ 완료' : missing.join('/') + ' 미등록';
-    const rows = [];
-    if (g.model)  rows.push(`<div class="irow"><span class="badge bm">모델명</span><span class="icode">${g.model}</span></div>`);
-    if (g.order)  rows.push(`<div class="irow"><span class="badge bo">O/N</span><span class="icode">${g.order}</span></div>`);
-    if (g.serial) rows.push(`<div class="irow"><span class="badge bs">S/N</span><span class="icode">${g.serial}</span></div>`);
-    g.qr.forEach(q => rows.push(`<div class="irow"><span class="badge bq">QR</span><span class="icode">${q.substring(0,36)}</span></div>`));
-    g.others.forEach(o => rows.push(`<div class="irow"><span class="badge bx">기타</span><span class="icode">${o}</span></div>`));
-    return `<div class="item-group">
-      <div class="igh">
-        <div class="igh-l">
-          <div class="igh-num">${groups.length - ri}</div>
-          <div><div class="igh-model">${g.model||'(모델명 없음)'}</div>
-          ${g.yaskawa ? `<div class="igh-series">${g.yaskawa.s} ${g.yaskawa.k}</div>` : ''}</div>
-        </div>
-        <button class="del-g" onclick="removeGroup(${idx})">×</button>
-      </div>
-      <div class="irows">${rows.join('')}</div>
-      <div class="ifoot">
-        <span class="ifoot-time">${g.time}</span>
-        <span class="ifoot-st ${complete?'st-ok':'st-partial'}">${statusTxt}</span>
-      </div>
-    </div>`;
+    const st = complete
+      ? `<span class="st-ok">✓</span>`
+      : `<span class="st-partial">△</span>`;
+    const series = g.yaskawa ? `<div class="tbl-series">${g.yaskawa.s} ${g.yaskawa.k}</div>` : '';
+    return `<tr>
+      <td class="tbl-num">${i+1}</td>
+      <td><div class="tbl-model">${g.model||'—'}</div>${series}</td>
+      <td class="tbl-code">${g.order||'—'}</td>
+      <td class="tbl-code">${g.serial||'—'}</td>
+      <td style="text-align:center">${st}</td>
+      <td style="text-align:center"><button class="del-row" onclick="removeGroup(${i})" aria-label="삭제">×</button></td>
+    </tr>`;
   }).join('');
+
+  wrap.innerHTML = `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:32px">#</th>
+          <th>모델명</th>
+          <th>오더번호 (O/N)</th>
+          <th>시리얼번호 (S/N)</th>
+          <th style="width:36px">상태</th>
+          <th style="width:36px"></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
-function showLastCard() {
-  if (!groups.length) return;
-  const g = groups[groups.length - 1];
-  const rows = [];
-  if (g.model)  rows.push(`<div class="lc-row"><span class="lc-badge bm">모델명</span><span class="lc-code">${g.model.substring(0,26)}</span>${g.yaskawa?`<span class="lc-series">${g.yaskawa.s}</span>`:''}</div>`);
-  if (g.order)  rows.push(`<div class="lc-row"><span class="lc-badge bo">O/N</span><span class="lc-code">${g.order}</span></div>`);
-  if (g.serial) rows.push(`<div class="lc-row"><span class="lc-badge bs">S/N</span><span class="lc-code">${g.serial}</span></div>`);
-  document.getElementById('lc-rows').innerHTML = rows.join('');
-  const card = document.getElementById('last-card');
-  card.classList.add('show');
-  clearTimeout(card._t);
-  card._t = setTimeout(() => card.classList.remove('show'), 5000);
+
+function removeGroup(i) {
+  groups.splice(i, 1);
+  updateStats();
+  renderTable();
 }
-function removeGroup(i) { groups.splice(i, 1); updateStats(); renderList(); }
+
 function clearAll() {
   if (!groups.length) return;
   if (!confirm('전체 목록을 삭제할까요?')) return;
   groups.length = 0; totalScans = 0; blocked = 0;
-  buf = {model:null, order:null, serial:null, qr:[], others:[]};
-  clearTimeout(bufTimer); bufTimer = null;
-  hideProgress();
-  updateStats(); renderList();
+  resetOverlay();
+  updateStats(); renderTable();
 }
+
+// ══ 중복 모달 ════════════════════════════════
 function showDup(code) {
   document.getElementById('dup-code').textContent = code;
   document.getElementById('dup-ov').classList.add('open');
 }
-function closeDup() { document.getElementById('dup-ov').classList.remove('open'); lastRaw=''; lastRawAt=0; }
+function closeDup() {
+  document.getElementById('dup-ov').classList.remove('open');
+}
 
-// ══ 내보내기 ═════════════════════════════
+// ══ 내보내기: XLSX ════════════════════════════
+function dlXLSX() {
+  if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
+  if (typeof XLSX === 'undefined') { showToast('엑셀 라이브러리 로딩 중...'); return; }
+  const data = [['번호','모델명','시리즈','종류','오더번호(O/N)','시리얼번호(S/N)','스캔시간','상태']];
+  groups.forEach((g,i) => {
+    const complete = !!(g.model && g.order && g.serial);
+    data.push([
+      i+1,
+      g.model||'',
+      g.yaskawa ? g.yaskawa.s : '',
+      g.yaskawa ? g.yaskawa.k : '',
+      g.order||'',
+      g.serial||'',
+      g.time,
+      complete ? '완료' : '미완료'
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  // 컬럼 너비 설정
+  ws['!cols'] = [{wch:6},{wch:22},{wch:10},{wch:8},{wch:16},{wch:20},{wch:12},{wch:8}];
+  // 헤더 스타일 (배경색)
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '출하목록');
+  const d = new Date();
+  const fn = `출하목록_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb, fn);
+  showToast('엑셀 파일 저장: ' + fn);
+}
+
+// ══ 내보내기: CSV ═════════════════════════════
 function toCSV() {
-  const rows = [['번호','모델명','오더번호(O/N)','시리얼번호(S/N)','시리즈','종류','QR/기타','스캔시간']];
-  groups.forEach((g,i) => rows.push([i+1, g.model||'', g.order||'', g.serial||'',
-    g.yaskawa?g.yaskawa.s:'', g.yaskawa?g.yaskawa.k:'',
-    [...g.qr, ...g.others].join(' | '), g.time]));
+  const rows = [['번호','모델명','시리즈','종류','오더번호(O/N)','시리얼번호(S/N)','스캔시간']];
+  groups.forEach((g,i) => rows.push([
+    i+1, g.model||'', g.yaskawa?g.yaskawa.s:'', g.yaskawa?g.yaskawa.k:'',
+    g.order||'', g.serial||'', g.time
+  ]));
   return rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
 }
 function dlCSV() {
@@ -903,8 +748,9 @@ function dlCSV() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+toCSV()], {type:'text/csv;charset=utf-8;'}));
   a.download = fn; a.click(); URL.revokeObjectURL(a.href);
-  showToast('저장: ' + fn);
+  showToast('CSV 저장: ' + fn);
 }
+
 function sendEmail() {
   if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
   const to   = document.getElementById('eto').value.trim();
@@ -926,7 +772,7 @@ async function sendSheets() {
   } catch(e) { showToast('전송 실패'); }
 }
 
-// ══ 토스트 / 키보드 ══════════════════════
+// ══ 토스트 ══════════════════════════════════
 let _tt;
 function showToast(m) {
   const el = document.getElementById('toast');
@@ -935,21 +781,14 @@ function showToast(m) {
 }
 document.getElementById('min').addEventListener('keydown', e => { if (e.key==='Enter') addManual(); });
 
-// ══ 시작 ════════════════════════════════
+// ══ 시작 ════════════════════════════════════
 function waitAndInit() {
-  if (typeof ZXingBrowser !== 'undefined' || window._zxingBundleLoaded) {
-    initEngine();
-  } else if (window._zxingLoaded === false) {
-    initEngine();
-  } else {
-    setTimeout(waitAndInit, 150);
-  }
+  if (typeof ZXingBrowser !== 'undefined' || window._zxingBundleLoaded) { initEngine(); }
+  else if (window._zxingLoaded === false) { initEngine(); }
+  else { setTimeout(waitAndInit, 150); }
 }
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', waitAndInit);
-} else {
-  waitAndInit();
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', waitAndInit);
+else waitAndInit();
 </script>
 </body>
 </html>
