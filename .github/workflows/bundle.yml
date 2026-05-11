@@ -1,0 +1,32 @@
+name: Bundle ZXing & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ZXing
+        run: npm install @zxing/browser@0.1.4
+
+      - name: Bundle ZXing into HTML
+        run: |
+          cp node_modules/@zxing/browser/umd/index.min.js zxing-bundle.js
+          echo "Done: $(wc -c < zxing-bundle.js) bytes"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          exclude_assets: '.github,node_modules,package*.json'
