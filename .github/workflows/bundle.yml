@@ -16,12 +16,21 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install ZXing
-        run: npm install @zxing/browser@0.1.4
+      - name: Install ZXing and check files
+        run: |
+          npm install @zxing/browser@0.1.4
+          echo "=== 설치된 파일 목록 ==="
+          find node_modules/@zxing -name "*.js" | head -30
 
       - name: Bundle ZXing into HTML
         run: |
-          cp node_modules/@zxing/browser/umd/index.min.js zxing-bundle.js
+          # umd 파일 찾아서 복사
+          ZXING_FILE=$(find node_modules/@zxing -name "*.min.js" | head -1)
+          if [ -z "$ZXING_FILE" ]; then
+            ZXING_FILE=$(find node_modules/@zxing -name "index.js" | head -1)
+          fi
+          echo "사용할 파일: $ZXING_FILE"
+          cp "$ZXING_FILE" zxing-bundle.js
           echo "Done: $(wc -c < zxing-bundle.js) bytes"
 
       - name: Deploy to GitHub Pages
