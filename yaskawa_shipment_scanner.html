@@ -324,22 +324,34 @@ let buf = { model:null, serial:null };
 let bufStartTime = 0;
 const BUF_MAX_MS = 4000; // 4초 내 코드들만 같은 라벨로 묶음
 
-// ══ 삑 소리 (Web Audio API) ══
+// ══ 삑 소리 (Web Audio API - iOS 호환) ══
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // iOS: suspended 상태면 resume
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
 function beep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
+    const ctx = getAudioCtx();
+    const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(1200, ctx.currentTime);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1400, ctx.currentTime);
+    osc.frequency.setValueAtTime(1000, ctx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.12);
-  } catch(e) {}
+    osc.stop(ctx.currentTime + 0.18);
+  } catch(e) { console.log('beep error:', e); }
 }
+// iOS: 첫 터치에서 AudioContext 활성화
+document.addEventListener('touchstart', () => { try { getAudioCtx(); } catch(e){} }, {once:true});
 
 // ══ 페이지 전환 ══
 function goPage(n) {
@@ -356,7 +368,11 @@ function preprocess(raw) {
   let c = raw.trim();
   // S/N 끝 체크문자 제거
   const snMatch = c.match(/^([A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,})[A-Z]$/);
-  if (snMatch) return snMatch[1];
+  if (snMatch) c = snMatch[1];
+  // S/N 최대 15자리 (앞에서 15자만 사용)
+  if (/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}$/.test(c) && c.length > 15) {
+    c = c.substring(0, 15);
+  }
   // 모델명 끝 C 제거 (히든 체크문자)
   if (/^SG[DM][A-Z0-9].*[A-Z0-9]C$/.test(c) && c.length > 8) return c.slice(0, -1);
   return c;
@@ -692,14 +708,46 @@ function closeDup() {
   document.getElementById('dup-ov').classList.remove('open');
 }
 
-// ══ XLSX 내보내기 ══
+// ══ XLSX 내보내기 (모델별 열 배치) ══
+function buildXLSXData() {
+  // 모델명 목록 (등장 순서 유지, 중복 제거)
+  const models = [...new Set(groups.map(g => g.model).filter(Boolean))];
+
+  // 모델별 S/N 배열 수집
+  const modelSNs = {};
+  models.forEach(m => { modelSNs[m] = []; });
+  groups.forEach(g => {
+    if (g.model && g.serial) modelSNs[g.model].push(g.serial);
+  });
+
+  // 최대 행 수
+  const maxRows = Math.max(...models.map(m => modelSNs[m].length));
+
+  // 헤더: 빈칸, 모델명1, 모델명2, ...
+  const header = ['', ...models];
+  const rows = [header];
+
+  // 데이터: 번호, 각 모델의 i번째 S/N
+  for (let i = 0; i < maxRows; i++) {
+    const row = [i + 1];
+    models.forEach(m => {
+      row.push(modelSNs[m][i] || '');
+    });
+    rows.push(row);
+  }
+  return {rows, models};
+}
+
 function dlXLSX() {
   if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
   if (typeof XLSX === 'undefined') { showToast('엑셀 라이브러리 로딩 중...'); return; }
-  const data = [['번호','모델명','시리얼번호(S/N)','스캔시간']];
-  groups.forEach((g,i) => data.push([i+1, g.model||'', g.serial||'', g.time]));
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:6},{wch:24},{wch:22},{wch:12}];
+
+  const {rows, models} = buildXLSXData();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // 컬럼 너비: 번호 6, 모델별 16
+  ws['!cols'] = [{wch:6}, ...models.map(() => ({wch:18}))];
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '출하목록');
   const d = new Date();
@@ -709,8 +757,7 @@ function dlXLSX() {
 }
 
 function toCSV() {
-  const rows = [['번호','모델명','시리얼번호(S/N)','스캔시간']];
-  groups.forEach((g,i) => rows.push([i+1, g.model||'', g.serial||'', g.time]));
+  const {rows} = buildXLSXData();
   return rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
 }
 function dlCSV() {
@@ -728,8 +775,21 @@ function sendEmail() {
   const to   = document.getElementById('eto').value.trim();
   const subj = document.getElementById('esubj').value.trim();
   const note = document.getElementById('enote').value.trim();
-  const body = (note ? note+'\n\n' : '') + '=== 출하 목록 ===\n' + toCSV();
-  window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+
+  // 엑셀 첨부 불가(mailto 제한) → CSV를 본문에 포함 + 엑셀 자동 다운로드
+  if (typeof XLSX !== 'undefined') {
+    // 엑셀 먼저 다운로드
+    dlXLSX();
+    showToast('엑셀 저장 후 메일 앱 실행...');
+    setTimeout(() => {
+      const body = (note ? note+'\n\n' : '') +
+        '※ 첨부파일(xlsx)은 별도 다운로드되었습니다.\n\n=== 출하 목록 ===\n' + toCSV();
+      window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    }, 800);
+  } else {
+    const body = (note ? note+'\n\n' : '') + '=== 출하 목록 ===\n' + toCSV();
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+  }
 }
 async function sendSheets() {
   if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
