@@ -7,16 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="출하 스캐너">
 <title>YASKAWA 출하 스캐너</title>
-
-<!--
-  ╔══════════════════════════════════════════════════════════╗
-  ║  GitHub Actions 자동 빌드 방식                           ║
-  ║  .github/workflows/bundle.yml 이 자동으로               ║
-  ║  zxing-bundle.js 를 생성하고 GitHub Pages 에 배포함     ║
-  ╚══════════════════════════════════════════════════════════╝
--->
 <script src="zxing-bundle.js" onload="window._zxingLoaded=true" onerror="window._zxingLoaded=false"></script>
-
 <style>
 :root{
   --bg:#f5f5f3;--sf:#fff;--sf2:#efefed;--bd:rgba(0,0,0,.10);--bdm:rgba(0,0,0,.18);
@@ -46,8 +37,6 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .tbtab.on{color:var(--blue)}
 .tbtab svg{width:22px;height:22px}
 .tbtab span{font-size:10px;font-weight:600}
-
-/* 카메라 페이지 */
 #page-scan{position:relative;height:100dvh;height:100vh;background:#000;overflow:hidden}
 #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .scan-ui{position:absolute;inset:0;display:flex;flex-direction:column;pointer-events:none}
@@ -55,7 +44,6 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .scan-mid{display:flex;flex:0 0 55%}
 .scan-side{width:6%;background:rgba(0,0,0,.5)}
 .scan-window{flex:1;position:relative}
-/* 모서리 마커 */
 .sw-tl,.sw-tr,.sw-bl,.sw-br{position:absolute;width:24px;height:24px;border-color:#fff;border-style:solid}
 .sw-tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:6px 0 0 0}
 .sw-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 6px 0 0}
@@ -69,9 +57,8 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
   align-items:center;gap:10px;padding:14px 20px 10px;pointer-events:none}
 .scan-hint{font-size:14px;color:rgba(255,255,255,.92);font-weight:600;text-align:center}
 .scan-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:all}
-.chip{font-size:11px;padding:5px 12px;border-radius:20px;
-  border:1.5px solid rgba(255,255,255,.4);color:rgba(255,255,255,.7);
-  background:transparent;cursor:pointer;font-weight:600}
+.chip{font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);
+  color:rgba(255,255,255,.7);background:transparent;cursor:pointer;font-weight:600}
 .chip.on{background:rgba(255,255,255,.2);border-color:#fff;color:#fff}
 .cam-side-btns{position:absolute;top:16px;right:14px;display:flex;flex-direction:column;gap:10px;pointer-events:all}
 .cam-ico{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);
@@ -85,12 +72,30 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .eb-error{background:rgba(248,113,113,.2);color:#f87171;border:1px solid rgba(248,113,113,.35)}
 .start-ov{position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:14px;background:rgba(0,0,0,.72)}
-.start-btn{padding:14px 32px;background:rgba(255,255,255,.15);
-  border:2px solid rgba(255,255,255,.6);color:#fff;border-radius:var(--r);
-  font-size:16px;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:700;pointer-events:all}
+.start-btn{padding:14px 32px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.6);
+  color:#fff;border-radius:var(--r);font-size:16px;cursor:pointer;display:flex;
+  align-items:center;gap:10px;font-weight:700;pointer-events:all}
 .start-note{font-size:13px;color:rgba(255,255,255,.55);text-align:center;padding:0 24px;line-height:1.55}
 .fb{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .1s}
 .fb.ok{background:rgba(34,197,94,.3)}.fb.err{background:rgba(220,53,53,.4)}.fb.on{opacity:1}
+
+/* 스캔 진행상황 오버레이 */
+.scan-progress{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.75);border-radius:14px;padding:14px 20px;
+  display:none;flex-direction:column;gap:8px;min-width:220px;pointer-events:none}
+.scan-progress.show{display:flex}
+.sp-title{font-size:11px;color:rgba(255,255,255,.5);text-align:center;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.sp-row{display:flex;align-items:center;gap:8px}
+.sp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sp-dot.done{background:#4ade80}
+.sp-dot.wait{background:rgba(255,255,255,.25)}
+.sp-label{font-size:13px;font-weight:600}
+.sp-label.done{color:#4ade80}
+.sp-label.wait{color:rgba(255,255,255,.5)}
+.sp-val{font-size:11px;font-family:'Courier New',monospace;color:rgba(255,255,255,.7);
+  flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 .last-card{display:none;position:absolute;left:0;right:0;bottom:0;
   background:rgba(15,15,15,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   padding:12px 16px calc(16px + env(safe-area-inset-bottom));
@@ -103,8 +108,6 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .lc-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
 .lc-code{font-size:13px;font-family:'Courier New',monospace;color:#fff;word-break:break-all;font-weight:600;flex:1}
 .lc-series{font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap;flex-shrink:0}
-
-/* 목록 페이지 */
 #page-list{padding-bottom:calc(62px + env(safe-area-inset-bottom));min-height:100vh}
 .list-hdr{display:flex;align-items:center;justify-content:space-between;
   padding:14px 16px 10px;border-bottom:.5px solid var(--bd);
@@ -143,15 +146,12 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .bq{background:var(--amberb);color:var(--amber)}
 .bx{background:var(--sf2);color:var(--t2)}
 .icode{font-size:12.5px;font-family:'Courier New',monospace;color:var(--tx);word-break:break-all;flex:1}
-.ifoot{display:flex;align-items:center;justify-content:space-between;
-  padding:6px 12px 10px}
+.ifoot{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 10px}
 .ifoot-time{font-size:11px;color:var(--t3)}
 .ifoot-st{font-size:11px;font-weight:700}
 .st-ok{color:var(--green)}.st-partial{color:var(--amber)}
 .empty-st{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:13px;line-height:1.9}
 .empty-st svg{width:44px;height:44px;opacity:.3;display:block;margin:0 auto 12px}
-
-/* 내보내기 페이지 */
 #page-export{padding:14px 16px;padding-bottom:calc(80px + env(safe-area-inset-bottom));min-height:100vh}
 #page-export h2{font-size:16px;font-weight:700;margin-bottom:14px}
 .exp-btn{width:100%;padding:14px;font-size:14px;font-weight:700;border-radius:var(--r);
@@ -161,33 +161,24 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 .exp-btn:active{opacity:.7}
 .exp-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
 .exp-btn.green{background:var(--green);color:#fff;border-color:var(--green)}
-.sec-lbl{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;
-  letter-spacing:.04em;margin:18px 0 10px}
-.flbl{display:block;font-size:11px;font-weight:700;color:var(--t2);
-  margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 10px}
+.flbl{display:block;font-size:11px;font-weight:700;color:var(--t2);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
 .finp{width:100%;padding:10px 12px;font-size:14px;border:.5px solid var(--bdm);
   border-radius:var(--rs);background:var(--sf2);color:var(--tx);outline:none;font-family:inherit}
 .finp:focus{border-color:var(--blue)}
 textarea.finp{resize:none;height:70px}
 .fnote{font-size:12px;color:var(--t3);margin-top:8px;line-height:1.55}
-
-/* 중복 모달 */
-.dup-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
-  z-index:300;align-items:center;justify-content:center}
+.dup-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center}
 .dup-ov.open{display:flex}
-.dup-box{background:var(--sf);border-radius:20px;padding:2rem 1.5rem 1.5rem;
-  width:88%;max-width:340px;text-align:center}
-.dup-ico{width:64px;height:64px;border-radius:50%;background:var(--redb);
-  display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.dup-box{background:var(--sf);border-radius:20px;padding:2rem 1.5rem 1.5rem;width:88%;max-width:340px;text-align:center}
+.dup-ico{width:64px;height:64px;border-radius:50%;background:var(--redb);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
 .dup-ico svg{width:32px;height:32px;color:var(--red)}
 .dup-box h2{font-size:17px;font-weight:700;margin-bottom:6px}
 .dup-box p{font-size:13px;color:var(--t2);margin-bottom:14px;line-height:1.5}
 .dup-code-card{background:var(--sf2);border-radius:var(--rs);padding:10px 14px;text-align:left;margin-bottom:4px}
 .dup-code-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:3px}
 .dup-code-val{font-size:13px;font-family:'Courier New',monospace;font-weight:700;color:var(--red);word-break:break-all}
-.dup-ok{width:100%;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;
-  cursor:pointer;border:none;background:var(--red);color:#fff;margin-top:12px}
-
+.dup-ok{width:100%;padding:13px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;border:none;background:var(--red);color:#fff;margin-top:12px}
 .toast{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
   background:rgba(20,20,20,.92);color:#fff;padding:10px 20px;border-radius:24px;
   font-size:13px;font-weight:500;z-index:400;opacity:0;transition:opacity .22s;
@@ -197,7 +188,6 @@ textarea.finp{resize:none;height:70px}
 </head>
 <body>
 
-<!-- 스캔 페이지 -->
 <div id="page-scan" class="page active">
   <video id="video" autoplay playsinline muted></video>
   <div class="scan-ui">
@@ -238,13 +228,33 @@ textarea.finp{resize:none;height:70px}
     <div class="start-note" id="start-note">카메라 권한이 필요합니다</div>
   </div>
   <div class="fb" id="fb"></div>
+
+  <!-- 스캔 진행상황 (화면 중앙) -->
+  <div class="scan-progress" id="scan-progress">
+    <div class="sp-title">스캔 진행중</div>
+    <div class="sp-row">
+      <div class="sp-dot wait" id="sp-dot-model"></div>
+      <span class="sp-label wait" id="sp-lbl-model">모델명</span>
+      <span class="sp-val" id="sp-val-model">—</span>
+    </div>
+    <div class="sp-row">
+      <div class="sp-dot wait" id="sp-dot-order"></div>
+      <span class="sp-label wait" id="sp-lbl-order">O/N</span>
+      <span class="sp-val" id="sp-val-order">—</span>
+    </div>
+    <div class="sp-row">
+      <div class="sp-dot wait" id="sp-dot-serial"></div>
+      <span class="sp-label wait" id="sp-lbl-serial">S/N</span>
+      <span class="sp-val" id="sp-val-serial">—</span>
+    </div>
+  </div>
+
   <div class="last-card" id="last-card">
     <div class="lc-title">방금 등록</div>
     <div class="lc-rows" id="lc-rows"></div>
   </div>
 </div>
 
-<!-- 목록 페이지 -->
 <div id="page-list" class="page">
   <div class="list-hdr">
     <h1>
@@ -270,7 +280,6 @@ textarea.finp{resize:none;height:70px}
   </div>
 </div>
 
-<!-- 내보내기 페이지 -->
 <div id="page-export" class="page">
   <h2>내보내기</h2>
   <button class="exp-btn primary" onclick="dlCSV()">
@@ -298,7 +307,6 @@ textarea.finp{resize:none;height:70px}
   </button>
 </div>
 
-<!-- 탭바 -->
 <div class="tabbar">
   <button class="tbtab on" id="tb0" onclick="goPage(0)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
@@ -314,7 +322,6 @@ textarea.finp{resize:none;height:70px}
   </button>
 </div>
 
-<!-- 중복 모달 -->
 <div class="dup-ov" id="dup-ov">
   <div class="dup-box">
     <div class="dup-ico">
@@ -333,118 +340,125 @@ textarea.finp{resize:none;height:70px}
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════
-// 상태
-// ════════════════════════════════════════
-const groups=[];
-let scanMode='auto', torchOn=false;
-let lastRaw='', lastRawAt=0, totalScans=0, blocked=0;
-let engineReady=false, useNative=false, nativeDet=null;
-let scanRunning=false, scanCanvas=null, scanCtx=null;
-let currentStream=null, facingMode='environment';
-let pendingGid=null, pendingTimer=null;
+// ══ 상태 ════════════════════════════════
+const groups = [];
+let scanMode = 'auto', torchOn = false;
+let lastRaw = '', lastRawAt = 0, totalScans = 0, blocked = 0;
+let engineReady = false, useNative = false, nativeDet = null;
+let scanRunning = false, scanCanvas = null, scanCtx = null;
+let currentStream = null, facingMode = 'environment';
 
-// ════════════════════════════════════════
-// 페이지
-// ════════════════════════════════════════
-function goPage(n){
-  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));
-  document.querySelectorAll('.tbtab').forEach((t,i)=>t.classList.toggle('on',i===n));
-  if(n===2){
-    const d=new Date();
-    document.getElementById('esubj').value=`출하 목록 ${d.toLocaleDateString('ko-KR')} (${groups.length}건)`;
+// ══ 버퍼 (라벨 1장 = 1그룹) ════════════
+let buf = { model:null, order:null, serial:null, qr:[], others:[] };
+let bufTimer = null;
+const BUF_TIMEOUT = 4000;
+
+// ══ 페이지 ══════════════════════════════
+function goPage(n) {
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===n));
+  document.querySelectorAll('.tbtab').forEach((t,i) => t.classList.toggle('on', i===n));
+  if (n===2) {
+    const d = new Date();
+    document.getElementById('esubj').value = `출하 목록 ${d.toLocaleDateString('ko-KR')} (${groups.length}건)`;
   }
 }
 
-// ════════════════════════════════════════
-// YASKAWA 감지
-// ════════════════════════════════════════
-function detectY(c){
-  if(/^SGD7S-/i.test(c))return{s:'SIGMA-7',k:'서보팩'};
-  if(/^SGD7W-/i.test(c))return{s:'SIGMA-7W',k:'서보팩'};
-  if(/^SGDV-/i.test(c)) return{s:'SIGMA-5',k:'서보팩'};
-  if(/^SGDS-/i.test(c)) return{s:'SIGMA-5',k:'서보팩'};
-  if(/^SGM7[A-Z]-/i.test(c))return{s:'SIGMA-7',k:'서보모터'};
-  if(/^SGMJV-|^SGMAV-|^SGMPS-/i.test(c))return{s:'SIGMA-5',k:'서보모터'};
-  if(/^SGM[A-Z0-9]+-/i.test(c))return{s:'SIGMA',k:'서보모터'};
+// ══ YASKAWA 감지 ═════════════════════════
+function detectY(c) {
+  if (/^SGD7S-/i.test(c)) return {s:'SIGMA-7',  k:'서보팩'};
+  if (/^SGD7W-/i.test(c)) return {s:'SIGMA-7W', k:'서보팩'};
+  if (/^SGDV-/i.test(c))  return {s:'SIGMA-5',  k:'서보팩'};
+  if (/^SGDS-/i.test(c))  return {s:'SIGMA-5',  k:'서보팩'};
+  if (/^SGM7[A-Z]-/i.test(c)) return {s:'SIGMA-7', k:'서보모터'};
+  if (/^SGMJV-|^SGMAV-|^SGMPS-/i.test(c)) return {s:'SIGMA-5', k:'서보모터'};
+  if (/^SGM[A-Z0-9]+-/i.test(c)) return {s:'SIGMA', k:'서보모터'};
   return null;
 }
 
-// ════════════════════════════════════════
-// 코드 분류
-// ════════════════════════════════════════
-function classify(raw){
-  // 접두어 명시된 경우 최우선
-  if(/^O\/N\s*:/i.test(raw))return{type:'order', val:raw.replace(/^O\/N\s*:\s*/i,'').trim()};
-  if(/^S\/N\s*:/i.test(raw))return{type:'serial',val:raw.replace(/^S\/N\s*:\s*/i,'').trim()};
+// ══ 코드 분류 ════════════════════════════
+function classify(raw) {
+  // 접두어 명시
+  if (/^O\/N\s*:/i.test(raw)) return {type:'order',  val:raw.replace(/^O\/N\s*:\s*/i,'').trim()};
+  if (/^S\/N\s*:/i.test(raw)) return {type:'serial', val:raw.replace(/^S\/N\s*:\s*/i,'').trim()};
 
   const c = raw.trim();
-  if(scanMode!=='auto') return{type:scanMode, val:c};
+  if (scanMode !== 'auto') return {type:scanMode, val:c};
 
-  // ── YASKAWA 모델명 패턴 (최우선) ──────────────────────
-  // 서보팩: SGD7S-, SGD7W-, SGDV-, SGDS-
-  // 서보모터: SGM7x-, SGMJV-, SGMAV-, SGMPS-, SGMxx-
-  if(/^SGD7[SW]-/i.test(c))  return{type:'model', val:c};
-  if(/^SGDV-/i.test(c))       return{type:'model', val:c};
-  if(/^SGDS-/i.test(c))       return{type:'model', val:c};
-  if(/^SGM7[A-Z]-/i.test(c)) return{type:'model', val:c};
-  if(/^SGMJV-|^SGMAV-|^SGMPS-/i.test(c)) return{type:'model', val:c};
-  if(/^SGM[A-Z]{1,2}[0-9]-/i.test(c)) return{type:'model', val:c};
+  // YASKAWA 모델명 — 최우선
+  if (/^SGD7[SW]-/i.test(c))  return {type:'model', val:c};
+  if (/^SGDV-/i.test(c))       return {type:'model', val:c};
+  if (/^SGDS-/i.test(c))       return {type:'model', val:c};
+  if (/^SGM7[A-Z]-/i.test(c)) return {type:'model', val:c};
+  if (/^SGMJV-|^SGMAV-|^SGMPS-/i.test(c)) return {type:'model', val:c};
+  if (/^SGM[A-Z]{1,2}[0-9]-/i.test(c))    return {type:'model', val:c};
 
-  // ── S/N 패턴 ──────────────────────────────────────────
-  // 예: D018XD474710001, DL186M222510003, D0251K348710016
-  if(/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}$/.test(c)) return{type:'serial', val:c};
+  // S/N: 알파벳1~2 + 숫자3~4 + 알파벳1~2 + 숫자8이상
+  // 예) D018XD474710001, DL186M222510003, D0251K348710016
+  if (/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}$/.test(c)) return {type:'serial', val:c};
 
-  // ── O/N 패턴 ──────────────────────────────────────────
-  // 예: 8P1545-2, R23980-339, 7C2699-1, R18310-077
-  if(/^[A-Z0-9]{2,6}-[0-9]{1,4}$/.test(c)) return{type:'order', val:c};
+  // O/N: 영숫자2~6 + 하이픈 + 숫자1~4
+  // 예) 8P1545-2, R23980-339, 7C2699-1, R18310-077, 561459-8
+  if (/^[A-Z0-9]{2,6}-[0-9]{1,4}$/.test(c)) return {type:'order', val:c};
 
-  // ── QR / 기타 ─────────────────────────────────────────
-  if(c.startsWith('http') || c.length > 40) return{type:'qr', val:c};
-
-  return{type:'other', val:c};
+  if (c.startsWith('http') || c.length > 40) return {type:'qr', val:c};
+  return {type:'other', val:c};
 }
 
-// ════════════════════════════════════════
-// 항목 추가
-// ════════════════════════════════════════
-// ════════════════════════════════════════
-// 항목 추가 — 라벨 1장 자동 그룹화
-// ════════════════════════════════════════
+// ══ 진행상황 UI 업데이트 ══════════════════
+function updateProgress() {
+  const hasAny = buf.model || buf.order || buf.serial;
+  const prog = document.getElementById('scan-progress');
+  prog.classList.toggle('show', !!hasAny);
 
-// 현재 조립 중인 그룹 버퍼
-let buf = { model:null, order:null, serial:null, qr:[], others:[] };
-let bufTimer = null;
-const BUF_TIMEOUT = 4000; // 4초 내 스캔된 코드는 같은 라벨로 묶음
+  ['model','order','serial'].forEach(k => {
+    const val = buf[k];
+    const dot = document.getElementById('sp-dot-'+k);
+    const lbl = document.getElementById('sp-lbl-'+k);
+    const valEl = document.getElementById('sp-val-'+k);
+    if (val) {
+      dot.className = 'sp-dot done';
+      lbl.className = 'sp-label done';
+      valEl.textContent = val.length > 16 ? val.substring(0,14)+'…' : val;
+    } else {
+      dot.className = 'sp-dot wait';
+      lbl.className = 'sp-label wait';
+      valEl.textContent = '—';
+    }
+  });
+}
 
+function hideProgress() {
+  document.getElementById('scan-progress').classList.remove('show');
+}
+
+// ══ 버퍼 flush (그룹 등록) ════════════════
 function flushBuf() {
-  // 버퍼에 뭔가 있으면 그룹으로 등록
   const hasData = buf.model || buf.order || buf.serial || buf.qr.length || buf.others.length;
   if (!hasData) return;
 
-  // 이미 완전히 같은 그룹이 있는지 확인 (모델+오더+시리얼 모두 일치)
- // 개별 코드 기준 중복 체크 (모델명 또는 시리얼이 이미 등록된 경우)
-  if (buf.model && groups.find(g => g.model===buf.model && g.serial===buf.serial)) {
+  // S/N 중복 체크 (같은 시리얼은 절대 중복 등록 안 됨)
+  if (buf.serial && groups.find(g => g.serial === buf.serial)) {
     flash('err');
-    showDup(buf.model + ' (이미 등록된 제품)');
-    buf = { model:null, order:null, serial:null, qr:[], others:[] };
+    showDup(buf.serial + ' (이미 등록된 S/N)');
+    buf = {model:null, order:null, serial:null, qr:[], others:[]};
+    hideProgress();
     return;
   }
-  if (buf.serial && groups.find(g => g.serial===buf.serial)) {
-    if (dup) {
-      flash('err');
-      showDup(buf.model + ' / ' + buf.order + ' / ' + buf.serial);
-      buf = { model:null, order:null, serial:null, qr:[], others:[] };
-      return;
-    }
+  // 모델+오더 동일 중복 체크
+  if (buf.model && buf.order && groups.find(g => g.model === buf.model && g.order === buf.order)) {
+    flash('err');
+    showDup(buf.model + ' / ' + buf.order + ' (이미 등록)');
+    buf = {model:null, order:null, serial:null, qr:[], others:[]};
+    hideProgress();
+    return;
   }
 
   const g = {
     id: Date.now(),
-    model: buf.model,
-    order: buf.order,
+    model:  buf.model,
+    order:  buf.order,
     serial: buf.serial,
-    qr: [...buf.qr],
+    qr:     [...buf.qr],
     others: [...buf.others],
     yaskawa: buf.model ? detectY(buf.model) : null,
     time: new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
@@ -455,16 +469,16 @@ function flushBuf() {
   renderList();
   showLastCard();
 
-  const parts = [buf.model, buf.order, buf.serial].filter(Boolean);
-  showToast('✓ 등록완료: ' + parts.length + '개 코드 묶음');
+  const cnt = [buf.model, buf.order, buf.serial].filter(Boolean).length;
+  showToast('✓ 등록완료 (' + cnt + '/3 항목)');
 
-  // 버퍼 초기화
-  buf = { model:null, order:null, serial:null, qr:[], others:[] };
+  buf = {model:null, order:null, serial:null, qr:[], others:[]};
+  hideProgress();
 }
 
+// ══ 항목 추가 ════════════════════════════
 function tryAdd(raw) {
   const now = Date.now();
-  // 완전히 동일한 raw값 1.5초 내 중복 무시 (같은 바코드 연속 인식 방지)
   if (raw === lastRaw && now - lastRawAt < 1500) return;
   lastRaw = raw; lastRawAt = now;
 
@@ -472,13 +486,13 @@ function tryAdd(raw) {
   totalScans++;
   updateStats();
 
-  // 버퍼 내 중복 체크
-  if (type==='model'  && buf.model===val)  return;
-  if (type==='order'  && buf.order===val)  return;
-  if (type==='serial' && buf.serial===val) return;
+  // 버퍼 내 중복 무시
+  if (type==='model'  && buf.model  === val) return;
+  if (type==='order'  && buf.order  === val) return;
+  if (type==='serial' && buf.serial === val) return;
   if (type==='qr'     && buf.qr.includes(val)) return;
 
-  // 전체 등록된 그룹 중복 체크 (개별 코드 기준)
+  // 전체 그룹 중복 체크
   if (isDup(val)) {
     blocked++;
     flash('err');
@@ -488,25 +502,23 @@ function tryAdd(raw) {
   }
 
   // 버퍼에 추가
-  if (type==='model')       buf.model  = val;
+  if      (type==='model')  buf.model  = val;
   else if (type==='order')  buf.order  = val;
   else if (type==='serial') buf.serial = val;
   else if (type==='qr')     buf.qr.push(val);
   else                      buf.others.push(val);
 
-  // 진행 상황 토스트
-  const done = [buf.model?'모델✓':'모델…', buf.order?'O/N✓':'O/N…', buf.serial?'S/N✓':'S/N…'];
-  showToast(done.join('  '));
+  updateProgress();
 
-  // 3개 모두 읽혔으면 즉시 등록
+  // 3개 모두 읽히면 즉시 등록
   if (buf.model && buf.order && buf.serial) {
     clearTimeout(bufTimer);
     bufTimer = null;
-    setTimeout(flushBuf, 300); // 약간의 딜레이 후 등록 (마지막 코드 안정화)
+    setTimeout(flushBuf, 300);
     return;
   }
 
-  // 타이머 리셋 — 4초 내 추가 스캔 없으면 있는 것만 등록
+  // 타이머: 4초 내 추가 스캔 없으면 있는 것만 등록
   clearTimeout(bufTimer);
   bufTimer = setTimeout(flushBuf, BUF_TIMEOUT);
 }
@@ -526,192 +538,176 @@ function addManual() {
   document.getElementById('min').value = '';
 }
 
-// ════════════════════════════════════════
-// 엔진 초기화
-// ════════════════════════════════════════
-function setBadge(msg,cls){
-  const el=document.getElementById('eng-badge');
-  el.textContent=msg; el.className='engine-badge '+cls;
+// ══ 엔진 초기화 ══════════════════════════
+function setBadge(msg, cls) {
+  const el = document.getElementById('eng-badge');
+  el.textContent = msg; el.className = 'engine-badge ' + cls;
 }
 
-async function initEngine(){
-  setBadge('준비 중...','eb-loading');
+async function initEngine() {
+  setBadge('준비 중...', 'eb-loading');
 
-  // 1) 네이티브 BarcodeDetector (Android Chrome, iOS Safari 17.4+)
-  if('BarcodeDetector' in window){
-    try{
-      const fmts=['qr_code','code_128','code_39','ean_13','ean_8','data_matrix'];
-      nativeDet=new BarcodeDetector({formats:fmts});
-      // 실제 감지 테스트
-      const c=document.createElement('canvas');c.width=2;c.height=2;
+  if ('BarcodeDetector' in window) {
+    try {
+      const fmts = ['qr_code','code_128','code_39','ean_13','ean_8','data_matrix'];
+      nativeDet = new BarcodeDetector({formats: fmts});
+      const c = document.createElement('canvas'); c.width=2; c.height=2;
       await nativeDet.detect(c);
-      useNative=true; engineReady=true;
-      setBadge('✓ 네이티브 스캐너','eb-ready');
+      useNative = true; engineReady = true;
+      setBadge('✓ 네이티브 스캐너', 'eb-ready');
       return;
-    }catch(e){nativeDet=null;}
+    } catch(e) { nativeDet = null; }
   }
 
-  // 2) ZXing (번들된 파일 — GitHub Actions 로 빌드됨)
-  if(typeof ZXingBrowser!=='undefined'){
-    useNative=false; engineReady=true;
-    setBadge('✓ ZXing 스캐너','eb-ready');
+  if (typeof ZXingBrowser !== 'undefined') {
+    useNative = false; engineReady = true;
+    setBadge('✓ ZXing 스캐너', 'eb-ready');
     return;
   }
 
-  // 3) ZXing CDN 동적 로드 시도
-  const cdns=[
+  const cdns = [
     'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js',
     'https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js',
   ];
-  for(const url of cdns){
-    try{
-      await new Promise((res,rej)=>{
-        const s=document.createElement('script');
-        const t=setTimeout(()=>{rej(new Error('timeout'));},6000);
-        s.onload=()=>{clearTimeout(t);setTimeout(res,200);};
-        s.onerror=()=>{clearTimeout(t);rej(new Error('load error'));};
-        s.crossOrigin='anonymous';
-        s.src=url;
+  for (const url of cdns) {
+    try {
+      await new Promise((res,rej) => {
+        const s = document.createElement('script');
+        const t = setTimeout(() => rej(new Error('timeout')), 6000);
+        s.onload = () => { clearTimeout(t); setTimeout(res, 200); };
+        s.onerror = () => { clearTimeout(t); rej(new Error('load error')); };
+        s.crossOrigin = 'anonymous';
+        s.src = url;
         document.head.appendChild(s);
       });
-      if(typeof ZXingBrowser!=='undefined'){
-        useNative=false; engineReady=true;
-        setBadge('✓ ZXing 스캐너','eb-ready');
+      if (typeof ZXingBrowser !== 'undefined') {
+        useNative = false; engineReady = true;
+        setBadge('✓ ZXing 스캐너', 'eb-ready');
         return;
       }
-    }catch(e){console.log('ZXing load failed:',url,e);}
+    } catch(e) { console.log('ZXing load failed:', url, e); }
   }
 
-  // 모두 실패
-  setBadge('직접 입력 모드','eb-error');
-  document.getElementById('start-note').textContent=
-    '⚠️ 자동 스캔 미지원 브라우저\nSafari로 열거나 직접 입력을 이용해주세요.';
+  setBadge('직접 입력 모드', 'eb-error');
+  document.getElementById('start-note').textContent = '⚠️ 자동 스캔 미지원\nSafari로 열거나 직접 입력을 이용해주세요.';
 }
 
-// ════════════════════════════════════════
-// 카메라
-// ════════════════════════════════════════
-async function startCam(){
-  document.getElementById('start-ov').style.display='none';
-  try{
-    if(currentStream)currentStream.getTracks().forEach(t=>t.stop());
-    const stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:facingMode},width:{ideal:1920},height:{ideal:1080}}
+// ══ 카메라 ═══════════════════════════════
+async function startCam() {
+  document.getElementById('start-ov').style.display = 'none';
+  try {
+    if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {facingMode:{ideal:facingMode}, width:{ideal:1920}, height:{ideal:1080}}
     });
-    currentStream=stream;
-    const v=document.getElementById('video');
-    v.srcObject=stream;
-    v.onloadedmetadata=async()=>{
-      try{ await v.play(); }catch(e){}
+    currentStream = stream;
+    const v = document.getElementById('video');
+    v.srcObject = stream;
+    v.onloadedmetadata = async () => {
+      try { await v.play(); } catch(e) {}
       startScanLoop(v);
     };
-  }catch(e){
-    document.getElementById('start-ov').style.display='flex';
-    setBadge('카메라 권한 필요','eb-error');
+  } catch(e) {
+    document.getElementById('start-ov').style.display = 'flex';
+    setBadge('카메라 권한 필요', 'eb-error');
     showToast('카메라 오류: 권한을 허용해주세요');
   }
 }
 
-function startScanLoop(video){
-  scanRunning=false; // 기존 루프 중단
-  if(!engineReady){ showToast('스캐너 엔진 없음 — 직접 입력을 이용해주세요'); return; }
+function startScanLoop(video) {
+  scanRunning = false;
+  if (!engineReady) { showToast('스캐너 엔진 없음 — 직접 입력을 이용해주세요'); return; }
 
-  if(useNative){
-    if(!scanCanvas){
-      scanCanvas=document.createElement('canvas');
-      scanCtx=scanCanvas.getContext('2d',{willReadFrequently:true});
+  if (useNative) {
+    if (!scanCanvas) {
+      scanCanvas = document.createElement('canvas');
+      scanCtx = scanCanvas.getContext('2d', {willReadFrequently:true});
     }
-    scanRunning=true;
-    (async function loop(){
-      if(!scanRunning)return;
-      if(video.readyState>=video.HAVE_ENOUGH_DATA&&video.videoWidth>0){
-        scanCanvas.width=video.videoWidth;
-        scanCanvas.height=video.videoHeight;
-        scanCtx.drawImage(video,0,0);
-        try{
-          const res=await nativeDet.detect(scanCanvas);
-          res.forEach(r=>{ if(r.rawValue)tryAdd(r.rawValue); });
-        }catch(e){}
+    scanRunning = true;
+    (async function loop() {
+      if (!scanRunning) return;
+      if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+        scanCanvas.width  = video.videoWidth;
+        scanCanvas.height = video.videoHeight;
+        scanCtx.drawImage(video, 0, 0);
+        try {
+          const res = await nativeDet.detect(scanCanvas);
+          res.forEach(r => { if (r.rawValue) tryAdd(r.rawValue); });
+        } catch(e) {}
       }
-      setTimeout(()=>{ if(scanRunning)requestAnimationFrame(loop); },350);
+      setTimeout(() => { if (scanRunning) requestAnimationFrame(loop); }, 350);
     })();
-  } else if(typeof ZXingBrowser!=='undefined'){
-    try{
-      const reader=new ZXingBrowser.BrowserMultiFormatReader();
-      reader.decodeFromVideoElement(video,(result,err)=>{
-        if(result)tryAdd(result.getText());
+  } else if (typeof ZXingBrowser !== 'undefined') {
+    try {
+      const reader = new ZXingBrowser.BrowserMultiFormatReader();
+      reader.decodeFromVideoElement(video, (result, err) => {
+        if (result) tryAdd(result.getText());
       });
-    }catch(e){ showToast('ZXing 오류 — 직접 입력을 이용해주세요'); }
+    } catch(e) { showToast('ZXing 오류 — 직접 입력을 이용해주세요'); }
   }
 }
 
-function flipCam(){
-  scanRunning=false;
-  if(currentStream)currentStream.getTracks().forEach(t=>t.stop());
-  facingMode=facingMode==='environment'?'user':'environment';
-  setTimeout(startCam,300);
+function flipCam() {
+  scanRunning = false;
+  if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  setTimeout(startCam, 300);
 }
 
-async function toggleTorch(){
-  if(!currentStream)return;
-  const track=currentStream.getVideoTracks()[0];
-  try{
-    torchOn=!torchOn;
-    await track.applyConstraints({advanced:[{torch:torchOn}]});
-    document.getElementById('torch-btn').classList.toggle('lit',torchOn);
-  }catch(e){showToast('플래시 미지원');torchOn=false;}
+async function toggleTorch() {
+  if (!currentStream) return;
+  const track = currentStream.getVideoTracks()[0];
+  try {
+    torchOn = !torchOn;
+    await track.applyConstraints({advanced: [{torch: torchOn}]});
+    document.getElementById('torch-btn').classList.toggle('lit', torchOn);
+  } catch(e) { showToast('플래시 미지원'); torchOn = false; }
 }
 
-// ════════════════════════════════════════
-// 스캔 모드
-// ════════════════════════════════════════
-function setMode(m){
-  scanMode=m;
-  document.querySelectorAll('.chip').forEach((c,i)=>
-    c.classList.toggle('on',['model','order','serial','auto'][i]===m));
-  const h={model:'모델명 바코드',order:'오더번호(O/N) 바코드',
-    serial:'시리얼번호(S/N) 바코드',auto:'바코드 / QR 자동감지'};
-  document.getElementById('scan-hint').textContent=h[m]||h.auto;
+// ══ 스캔 모드 ════════════════════════════
+function setMode(m) {
+  scanMode = m;
+  document.querySelectorAll('.chip').forEach((c,i) =>
+    c.classList.toggle('on', ['model','order','serial','auto'][i] === m));
+  const h = {model:'모델명 바코드', order:'오더번호(O/N) 바코드',
+    serial:'시리얼번호(S/N) 바코드', auto:'바코드 / QR 자동감지'};
+  document.getElementById('scan-hint').textContent = h[m] || h.auto;
 }
 
-// ════════════════════════════════════════
-// UI
-// ════════════════════════════════════════
-function flash(type){
-  const el=document.getElementById('fb');
-  el.className='fb '+type+' on';
-  setTimeout(()=>el.classList.remove('on'),180);
+// ══ UI ══════════════════════════════════
+function flash(type) {
+  const el = document.getElementById('fb');
+  el.className = 'fb ' + type + ' on';
+  setTimeout(() => el.classList.remove('on'), 180);
 }
-function updateStats(){
-  document.getElementById('s0').textContent=groups.length;
-  document.getElementById('s1').textContent=totalScans;
-  document.getElementById('s2').textContent=blocked;
-  document.getElementById('tb1-lbl').textContent='목록 ('+groups.length+')';
+function updateStats() {
+  document.getElementById('s0').textContent = groups.length;
+  document.getElementById('s1').textContent = totalScans;
+  document.getElementById('s2').textContent = blocked;
+  document.getElementById('tb1-lbl').textContent = '목록 (' + groups.length + ')';
 }
-const TL={model:'모델명',order:'O/N',serial:'S/N',qr:'QR',other:'기타'};
-const BC={model:'bm',order:'bo',serial:'bs',qr:'bq',other:'bx'};
-function renderList(){
-  const el=document.getElementById('item-list');
-  const emp=document.getElementById('empty');
-  if(!groups.length){emp.style.display='';el.innerHTML='';el.appendChild(emp);return;}
-  emp.style.display='none';
-  el.innerHTML=[...groups].reverse().map((g,ri)=>{
-    const idx=groups.length-1-ri;
-    const complete=!!(g.model&&g.order&&g.serial);
-    const missing=[g.model?'':'모델',g.order?'':'O/N',g.serial?'':'S/N'].filter(Boolean);
-    const statusTxt=complete?'✓ 완료':missing.join('/')+ ' 미등록';
-    const rows=[];
-    if(g.model) rows.push(`<div class="irow"><span class="badge bm">모델명</span><span class="icode">${g.model}</span></div>`);
-    if(g.order) rows.push(`<div class="irow"><span class="badge bo">O/N</span><span class="icode">${g.order}</span></div>`);
-    if(g.serial)rows.push(`<div class="irow"><span class="badge bs">S/N</span><span class="icode">${g.serial}</span></div>`);
-    g.qr.forEach(q=>rows.push(`<div class="irow"><span class="badge bq">QR</span><span class="icode">${q.substring(0,36)}</span></div>`));
-    g.others.forEach(o=>rows.push(`<div class="irow"><span class="badge bx">기타</span><span class="icode">${o}</span></div>`));
-    return`<div class="item-group">
+function renderList() {
+  const el = document.getElementById('item-list');
+  const emp = document.getElementById('empty');
+  if (!groups.length) { emp.style.display=''; el.innerHTML=''; el.appendChild(emp); return; }
+  emp.style.display = 'none';
+  el.innerHTML = [...groups].reverse().map((g, ri) => {
+    const idx = groups.length - 1 - ri;
+    const complete = !!(g.model && g.order && g.serial);
+    const missing = [g.model?'':'모델', g.order?'':'O/N', g.serial?'':'S/N'].filter(Boolean);
+    const statusTxt = complete ? '✓ 완료' : missing.join('/') + ' 미등록';
+    const rows = [];
+    if (g.model)  rows.push(`<div class="irow"><span class="badge bm">모델명</span><span class="icode">${g.model}</span></div>`);
+    if (g.order)  rows.push(`<div class="irow"><span class="badge bo">O/N</span><span class="icode">${g.order}</span></div>`);
+    if (g.serial) rows.push(`<div class="irow"><span class="badge bs">S/N</span><span class="icode">${g.serial}</span></div>`);
+    g.qr.forEach(q => rows.push(`<div class="irow"><span class="badge bq">QR</span><span class="icode">${q.substring(0,36)}</span></div>`));
+    g.others.forEach(o => rows.push(`<div class="irow"><span class="badge bx">기타</span><span class="icode">${o}</span></div>`));
+    return `<div class="item-group">
       <div class="igh">
         <div class="igh-l">
-          <div class="igh-num">${groups.length-ri}</div>
+          <div class="igh-num">${groups.length - ri}</div>
           <div><div class="igh-model">${g.model||'(모델명 없음)'}</div>
-          ${g.yaskawa?`<div class="igh-series">${g.yaskawa.s} ${g.yaskawa.k}</div>`:''}</div>
+          ${g.yaskawa ? `<div class="igh-series">${g.yaskawa.s} ${g.yaskawa.k}</div>` : ''}</div>
         </div>
         <button class="del-g" onclick="removeGroup(${idx})">×</button>
       </div>
@@ -723,94 +719,93 @@ function renderList(){
     </div>`;
   }).join('');
 }
-function showLastCard(){
-  if(!groups.length)return;
-  const g=groups[groups.length-1];
-  const rows=[];
-  if(g.model) rows.push(`<div class="lc-row"><span class="lc-badge bm">모델명</span><span class="lc-code">${g.model.substring(0,26)}</span>${g.yaskawa?`<span class="lc-series">${g.yaskawa.s}</span>`:''}</div>`);
-  if(g.order) rows.push(`<div class="lc-row"><span class="lc-badge bo">O/N</span><span class="lc-code">${g.order}</span></div>`);
-  if(g.serial)rows.push(`<div class="lc-row"><span class="lc-badge bs">S/N</span><span class="lc-code">${g.serial}</span></div>`);
-  document.getElementById('lc-rows').innerHTML=rows.join('');
-  const card=document.getElementById('last-card');
+function showLastCard() {
+  if (!groups.length) return;
+  const g = groups[groups.length - 1];
+  const rows = [];
+  if (g.model)  rows.push(`<div class="lc-row"><span class="lc-badge bm">모델명</span><span class="lc-code">${g.model.substring(0,26)}</span>${g.yaskawa?`<span class="lc-series">${g.yaskawa.s}</span>`:''}</div>`);
+  if (g.order)  rows.push(`<div class="lc-row"><span class="lc-badge bo">O/N</span><span class="lc-code">${g.order}</span></div>`);
+  if (g.serial) rows.push(`<div class="lc-row"><span class="lc-badge bs">S/N</span><span class="lc-code">${g.serial}</span></div>`);
+  document.getElementById('lc-rows').innerHTML = rows.join('');
+  const card = document.getElementById('last-card');
   card.classList.add('show');
   clearTimeout(card._t);
-  card._t=setTimeout(()=>card.classList.remove('show'),5000);
+  card._t = setTimeout(() => card.classList.remove('show'), 5000);
 }
-function removeGroup(i){groups.splice(i,1);updateStats();renderList();}
-function clearAll(){
-  if(!groups.length)return;
-  if(!confirm('전체 목록을 삭제할까요?'))return;
-  groups.length=0;totalScans=0;blocked=0;pendingGid=null;
-  updateStats();renderList();
+function removeGroup(i) { groups.splice(i, 1); updateStats(); renderList(); }
+function clearAll() {
+  if (!groups.length) return;
+  if (!confirm('전체 목록을 삭제할까요?')) return;
+  groups.length = 0; totalScans = 0; blocked = 0;
+  buf = {model:null, order:null, serial:null, qr:[], others:[]};
+  clearTimeout(bufTimer); bufTimer = null;
+  hideProgress();
+  updateStats(); renderList();
 }
-function showDup(code){
-  document.getElementById('dup-code').textContent=code;
+function showDup(code) {
+  document.getElementById('dup-code').textContent = code;
   document.getElementById('dup-ov').classList.add('open');
 }
-function closeDup(){document.getElementById('dup-ov').classList.remove('open');lastRaw='';lastRawAt=0;}
+function closeDup() { document.getElementById('dup-ov').classList.remove('open'); lastRaw=''; lastRawAt=0; }
 
-// ════════════════════════════════════════
-// 내보내기
-// ════════════════════════════════════════
-function toCSV(){
-  const rows=[['번호','모델명','오더번호(O/N)','시리얼번호(S/N)','시리즈','종류','QR/기타','스캔시간']];
-  groups.forEach((g,i)=>rows.push([i+1,g.model||'',g.order||'',g.serial||'',
-    g.yaskawa?g.yaskawa.s:'',g.yaskawa?g.yaskawa.k:'',
-    [...g.qr,...g.others].join(' | '),g.time]));
-  return rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+// ══ 내보내기 ═════════════════════════════
+function toCSV() {
+  const rows = [['번호','모델명','오더번호(O/N)','시리얼번호(S/N)','시리즈','종류','QR/기타','스캔시간']];
+  groups.forEach((g,i) => rows.push([i+1, g.model||'', g.order||'', g.serial||'',
+    g.yaskawa?g.yaskawa.s:'', g.yaskawa?g.yaskawa.k:'',
+    [...g.qr, ...g.others].join(' | '), g.time]));
+  return rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
 }
-function dlCSV(){
-  if(!groups.length){showToast('스캔된 항목이 없습니다');return;}
-  const d=new Date();
-  const fn=`출하목록_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+toCSV()],{type:'text/csv;charset=utf-8;'}));
-  a.download=fn;a.click();URL.revokeObjectURL(a.href);
-  showToast('저장: '+fn);
+function dlCSV() {
+  if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
+  const d = new Date();
+  const fn = `출하목록_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+toCSV()], {type:'text/csv;charset=utf-8;'}));
+  a.download = fn; a.click(); URL.revokeObjectURL(a.href);
+  showToast('저장: ' + fn);
 }
-function sendEmail(){
-  if(!groups.length){showToast('스캔된 항목이 없습니다');return;}
-  const to=document.getElementById('eto').value.trim();
-  const subj=document.getElementById('esubj').value.trim();
-  const note=document.getElementById('enote').value.trim();
-  const body=(note?note+'\n\n':'')+'=== 출하 목록 ===\n'+toCSV();
-  window.location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+function sendEmail() {
+  if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
+  const to   = document.getElementById('eto').value.trim();
+  const subj = document.getElementById('esubj').value.trim();
+  const note = document.getElementById('enote').value.trim();
+  const body = (note ? note+'\n\n' : '') + '=== 출하 목록 ===\n' + toCSV();
+  window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
 }
-async function sendSheets(){
-  if(!groups.length){showToast('스캔된 항목이 없습니다');return;}
-  const url=document.getElementById('surl').value.trim();
-  if(!url){showToast('URL을 입력해주세요');return;}
+async function sendSheets() {
+  if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
+  const url = document.getElementById('surl').value.trim();
+  if (!url) { showToast('URL을 입력해주세요'); return; }
   showToast('전송 중...');
-  try{
-    await fetch(url,{method:'POST',mode:'no-cors',
+  try {
+    await fetch(url, {method:'POST', mode:'no-cors',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({groups,exportedAt:new Date().toISOString()})});
+      body:JSON.stringify({groups, exportedAt:new Date().toISOString()})});
     showToast('전송 완료!');
-  }catch(e){showToast('전송 실패');}
+  } catch(e) { showToast('전송 실패'); }
 }
 
-// ════════════════════════════════════════
-// 토스트 / 키보드
-// ════════════════════════════════════════
+// ══ 토스트 / 키보드 ══════════════════════
 let _tt;
-function showToast(m){
-  const el=document.getElementById('toast');
-  el.textContent=m;el.classList.add('show');
-  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),3000);
+function showToast(m) {
+  const el = document.getElementById('toast');
+  el.textContent = m; el.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), 3000);
 }
-document.getElementById('min').addEventListener('keydown',e=>{if(e.key==='Enter')addManual();});
+document.getElementById('min').addEventListener('keydown', e => { if (e.key==='Enter') addManual(); });
 
-// 시작
-function waitAndInit(){
-  if(typeof ZXingBrowser !== 'undefined' || window._zxingBundleLoaded){
+// ══ 시작 ════════════════════════════════
+function waitAndInit() {
+  if (typeof ZXingBrowser !== 'undefined' || window._zxingBundleLoaded) {
     initEngine();
-  } else if(window._zxingLoaded === false){
+  } else if (window._zxingLoaded === false) {
     initEngine();
   } else {
     setTimeout(waitAndInit, 150);
   }
 }
-if(document.readyState === 'loading'){
+if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', waitAndInit);
 } else {
   waitAndInit();
