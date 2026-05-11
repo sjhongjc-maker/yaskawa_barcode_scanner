@@ -373,8 +373,11 @@ function preprocess(raw) {
   if (/^[A-Z]{1,2}[0-9]{3,4}[A-Z]{1,2}[0-9]{8,}$/.test(c) && c.length > 15) {
     c = c.substring(0, 15);
   }
-  // 모델명 끝 C 제거 (히든 체크문자)
-  if (/^SG[DM][A-Z0-9].*[A-Z0-9]C$/.test(c) && c.length > 8) return c.slice(0, -1);
+  // 모델명 끝 히든 체크문자 C 제거
+  // SGD7C- 는 실제 모델명이므로 제외, 그 외 끝 C는 체크문자로 간주
+  if (/^SG[DM][A-Z0-9].*[A-Z0-9]C$/.test(c) && c.length > 8 && !/^SGD7C-/i.test(c)) {
+    return c.slice(0, -1);
+  }
   return c;
 }
 
@@ -394,14 +397,41 @@ function classify(raw) {
   const c = preprocess(raw.trim());
   if (!c) return 'ignore';
 
-  // ── 모델명 최우선 판별 ──
-  // YASKAWA 모델명은 반드시 SG로 시작
-  if (/^SGD7[SW]-[A-Z0-9]/i.test(c)) return {type:'model', val:c};
-  if (/^SGDV-[A-Z0-9]/i.test(c))      return {type:'model', val:c};
-  if (/^SGDS-[A-Z0-9]/i.test(c))      return {type:'model', val:c};
+  // ── YASKAWA 모델명 판별 (DB 기반, 최우선) ──
+  // ※ sigma7_database.json v2.3 기준
+
+  // SIGMA-7 서보팩 (SGD7S / SGD7W / SGD7C)
+  // 구조: SGD7x - [용량][전압][인터페이스][설계개정] [하드웨어옵션] [FTEX]
+  // 전압: A=200V, D=400V, F=100V
+  // 인터페이스: 00/10/20/40/A0/E0 (SGD7S), 20 (SGD7W), MA (SGD7C)
+  if (/^SGD7S-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 단축 서보팩
+  if (/^SGD7W-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 2축 서보팩
+  if (/^SGD7C-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 제어기 내장형 서보팩
+
+  // SIGMA-5 서보팩
+  if (/^SGDV-[A-Z0-9]/i.test(c))  return {type:'model', val:c};  // SIGMA-5 서보팩
+  if (/^SGDS-[A-Z0-9]/i.test(c))  return {type:'model', val:c};  // SIGMA-5 서보팩 (구형)
+
+  // SIGMA-7 서보모터 (SGM7 계열)
+  // SGM7A(소형직결), SGM7B(중관성), SGM7D(DD모터), SGM7E(선형),
+  // SGM7F(평탄형), SGM7G(대용량), SGM7H(중공), SGM7J(초소형),
+  // SGM7P(하이스피드), SGM7V(중용량)
   if (/^SGM7[A-Z]-[A-Z0-9]/i.test(c)) return {type:'model', val:c};
-  if (/^SGMJV-|^SGMAV-|^SGMPS-/i.test(c)) return {type:'model', val:c};
+
+  // SIGMA-5 서보모터
+  if (/^SGMJV-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 소형 직결
+  if (/^SGMAV-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 중관성
+  if (/^SGMPS-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 평탄형
+  if (/^SGMGV-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 대용량
+  if (/^SGMDV-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // DD모터
+  if (/^SGMEV-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 선형
+  if (/^SGMCV-[A-Z0-9]/i.test(c)) return {type:'model', val:c};  // 중공축
+
+  // SIGMA 구형 서보모터 (SGM 계열 범용)
   if (/^SGM[A-Z]{1,2}[0-9]-[A-Z0-9]/i.test(c)) return {type:'model', val:c};
+
+  // 추가 안전망: SGD / SGM 으로 시작하고 - 포함 (위 패턴 미포함 신규 모델 대응)
+  if (/^SG[DM][A-Z0-9]{1,2}-[A-Z0-9]/i.test(c)) return {type:'model', val:c};
 
   // ── S/N 판별 ──
   // 패턴: 알파벳1~2 + 숫자3~4 + 알파벳1~2 + 숫자8이상 (총 14~18자)
