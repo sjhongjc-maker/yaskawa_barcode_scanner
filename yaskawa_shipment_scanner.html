@@ -390,57 +390,117 @@ function classify(raw){
 // ════════════════════════════════════════
 // 항목 추가
 // ════════════════════════════════════════
-function tryAdd(raw){
-  const now=Date.now();
-  if(raw===lastRaw&&now-lastRawAt<1500)return;
-  lastRaw=raw; lastRawAt=now;
+// ════════════════════════════════════════
+// 항목 추가 — 라벨 1장 자동 그룹화
+// ════════════════════════════════════════
 
-  const {type,val}=classify(raw);
-  totalScans++;
+// 현재 조립 중인 그룹 버퍼
+let buf = { model:null, order:null, serial:null, qr:[], others:[] };
+let bufTimer = null;
+const BUF_TIMEOUT = 4000; // 4초 내 스캔된 코드는 같은 라벨로 묶음
 
-  if(isDup(val)){
-    blocked++; flash('err'); showDup(val); updateStats(); return;
-  }
+function flushBuf() {
+  // 버퍼에 뭔가 있으면 그룹으로 등록
+  const hasData = buf.model || buf.order || buf.serial || buf.qr.length || buf.others.length;
+  if (!hasData) return;
 
-  flash('ok');
-
-  // 그룹 배정 — 모델명이 오면 새 그룹 시작
-  if(type==='model'||pendingGid===null){
-    const g={
-      id:now, model:type==='model'?val:null,
-      order:type==='order'?val:null,
-      serial:type==='serial'?val:null,
-      qr:type==='qr'?[val]:[], others:type==='other'?[val]:[],
-      yaskawa:type==='model'?detectY(val):null,
-      time:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
-    };
-    groups.push(g);
-    pendingGid=g.id;
-  }else{
-    const g=groups.find(x=>x.id===pendingGid);
-    if(g){
-      if(type==='model'&&!g.model){g.model=val;g.yaskawa=detectY(val);}
-      else if(type==='order'&&!g.order)g.order=val;
-      else if(type==='serial'&&!g.serial)g.serial=val;
-      else if(type==='qr')g.qr.push(val);
-      else g.others.push(val);
+  // 이미 완전히 같은 그룹이 있는지 확인 (모델+오더+시리얼 모두 일치)
+  if (buf.model && buf.order && buf.serial) {
+    const dup = groups.find(g => g.model===buf.model && g.order===buf.order && g.serial===buf.serial);
+    if (dup) {
+      flash('err');
+      showDup(buf.model + ' / ' + buf.order + ' / ' + buf.serial);
+      buf = { model:null, order:null, serial:null, qr:[], others:[] };
+      return;
     }
   }
-  clearTimeout(pendingTimer);
-  pendingTimer=setTimeout(()=>{pendingGid=null;},3000);
 
-  updateStats(); renderList(); showLastCard();
-  showToast({model:'모델명',order:'오더번호',serial:'시리얼번호',qr:'QR코드',other:'기타'}[type]+' 등록: '+val.substring(0,22));
+  const g = {
+    id: Date.now(),
+    model: buf.model,
+    order: buf.order,
+    serial: buf.serial,
+    qr: [...buf.qr],
+    others: [...buf.others],
+    yaskawa: buf.model ? detectY(buf.model) : null,
+    time: new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+  };
+  groups.push(g);
+  flash('ok');
+  updateStats();
+  renderList();
+  showLastCard();
+
+  const parts = [buf.model, buf.order, buf.serial].filter(Boolean);
+  showToast('✓ 등록완료: ' + parts.length + '개 코드 묶음');
+
+  // 버퍼 초기화
+  buf = { model:null, order:null, serial:null, qr:[], others:[] };
 }
 
-function isDup(val){
-  for(const g of groups){
-    if(g.model===val||g.order===val||g.serial===val)return true;
-    if(g.qr.includes(val)||g.others.includes(val))return true;
+function tryAdd(raw) {
+  const now = Date.now();
+  // 완전히 동일한 raw값 1.5초 내 중복 무시 (같은 바코드 연속 인식 방지)
+  if (raw === lastRaw && now - lastRawAt < 1500) return;
+  lastRaw = raw; lastRawAt = now;
+
+  const {type, val} = classify(raw);
+  totalScans++;
+  updateStats();
+
+  // 버퍼 내 중복 체크
+  if (type==='model'  && buf.model===val)  return;
+  if (type==='order'  && buf.order===val)  return;
+  if (type==='serial' && buf.serial===val) return;
+  if (type==='qr'     && buf.qr.includes(val)) return;
+
+  // 전체 등록된 그룹 중복 체크 (개별 코드 기준)
+  if (isDup(val)) {
+    blocked++;
+    flash('err');
+    showDup(val);
+    updateStats();
+    return;
+  }
+
+  // 버퍼에 추가
+  if (type==='model')       buf.model  = val;
+  else if (type==='order')  buf.order  = val;
+  else if (type==='serial') buf.serial = val;
+  else if (type==='qr')     buf.qr.push(val);
+  else                      buf.others.push(val);
+
+  // 진행 상황 토스트
+  const done = [buf.model?'모델✓':'모델…', buf.order?'O/N✓':'O/N…', buf.serial?'S/N✓':'S/N…'];
+  showToast(done.join('  '));
+
+  // 3개 모두 읽혔으면 즉시 등록
+  if (buf.model && buf.order && buf.serial) {
+    clearTimeout(bufTimer);
+    bufTimer = null;
+    setTimeout(flushBuf, 300); // 약간의 딜레이 후 등록 (마지막 코드 안정화)
+    return;
+  }
+
+  // 타이머 리셋 — 4초 내 추가 스캔 없으면 있는 것만 등록
+  clearTimeout(bufTimer);
+  bufTimer = setTimeout(flushBuf, BUF_TIMEOUT);
+}
+
+function isDup(val) {
+  for (const g of groups) {
+    if (g.model===val || g.order===val || g.serial===val) return true;
+    if (g.qr.includes(val) || g.others.includes(val)) return true;
   }
   return false;
 }
-function addManual(){const v=document.getElementById('min').value.trim();if(!v)return;tryAdd(v);document.getElementById('min').value='';}
+
+function addManual() {
+  const v = document.getElementById('min').value.trim();
+  if (!v) return;
+  tryAdd(v);
+  document.getElementById('min').value = '';
+}
 
 // ════════════════════════════════════════
 // 엔진 초기화
