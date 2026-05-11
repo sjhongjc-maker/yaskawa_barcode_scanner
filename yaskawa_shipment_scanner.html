@@ -212,7 +212,7 @@ textarea.finp{resize:none;height:70px}
     </button>
   </div>
   <div class="start-ov" id="start-ov">
-    <button class="start-btn" onclick="startCam()">
+    <button class="start-btn" onclick="initAudio();startCam()">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
       카메라 시작
     </button>
@@ -326,32 +326,32 @@ const BUF_MAX_MS = 4000; // 4초 내 코드들만 같은 라벨로 묶음
 
 // ══ 삑 소리 (Web Audio API - iOS 호환) ══
 let _audioCtx = null;
-function getAudioCtx() {
-  if (!_audioCtx) {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  // iOS: suspended 상태면 resume
-  if (_audioCtx.state === 'suspended') _audioCtx.resume();
-  return _audioCtx;
+// 반드시 사용자 동작(버튼 클릭) 안에서 호출
+function initAudio() {
+  try {
+    if (!_audioCtx) {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  } catch(e) {}
 }
 function beep() {
   try {
-    const ctx = getAudioCtx();
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
+    if (!_audioCtx) return;
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    const osc  = _audioCtx.createOscillator();
+    const gain = _audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(_audioCtx.destination);
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(1400, ctx.currentTime);
-    osc.frequency.setValueAtTime(1000, ctx.currentTime + 0.06);
-    gain.gain.setValueAtTime(0.5, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.18);
+    osc.frequency.setValueAtTime(1800, _audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(900, _audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.6, _audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.15);
+    osc.start(_audioCtx.currentTime);
+    osc.stop(_audioCtx.currentTime + 0.15);
   } catch(e) { console.log('beep error:', e); }
 }
-// iOS: 첫 터치에서 AudioContext 활성화
-document.addEventListener('touchstart', () => { try { getAudioCtx(); } catch(e){} }, {once:true});
 
 // ══ 페이지 전환 ══
 function goPage(n) {
@@ -586,30 +586,51 @@ async function startCam() {
   }
 }
 
+// 위치 기반 스캔 — 라벨 구조에 맞게 프레임을 3분할
+// 모델명: 상단 40%, S/N: 하단 40% (가운데는 O/N이지만 무시)
+// 분할 캔버스를 각각 디코딩하면 원하는 바코드만 집중해서 인식
+let zoneCanvas = null, zoneCtx = null;
+
 function startLoop(video) {
   scanRunning = true;
   if (!scanCanvas) {
     scanCanvas = document.createElement('canvas');
     scanCtx = scanCanvas.getContext('2d', {willReadFrequently:true});
   }
+  if (!zoneCanvas) {
+    zoneCanvas = document.createElement('canvas');
+    zoneCtx = zoneCanvas.getContext('2d', {willReadFrequently:true});
+  }
 
   if (useNative && nativeDet) {
     (async function loop() {
       if (!scanRunning) return;
       if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
-        scanCanvas.width  = video.videoWidth;
-        scanCanvas.height = video.videoHeight;
+        const W = video.videoWidth;
+        const H = video.videoHeight;
+
+        // ── 전체 프레임 스캔 ──
+        scanCanvas.width = W; scanCanvas.height = H;
         scanCtx.drawImage(video, 0, 0);
-        try {
-          const results = await nativeDet.detect(scanCanvas);
-          // 한 프레임에서 나온 코드 모두 처리 — 같은 프레임이므로 섞임 없음
-          results.forEach(r => { if (r.rawValue) feedCode(r.rawValue); });
-        } catch(e) {}
+        const fullResults = await nativeDet.detect(scanCanvas).catch(() => []);
+        fullResults.forEach(r => { if (r.rawValue) feedCode(r.rawValue); });
+
+        // ── 위치 기반 보완 스캔 (필요한 코드만 집중) ──
+        // 현재 버퍼 상태에 따라 필요한 영역만 추가 스캔
+        if (!buf.model) {
+          // 모델명 없음 → 상단 45% 확대 스캔
+          await scanZone(video, W, H, 0, 0, W, H * 0.45);
+        }
+        if (!buf.serial) {
+          // S/N 없음 → 하단 40% 확대 스캔
+          await scanZone(video, W, H, 0, H * 0.55, W, H * 0.45);
+        }
       }
-      // 250ms 간격 — 속도와 안정성 균형
-      setTimeout(() => { if (scanRunning) requestAnimationFrame(loop); }, 250);
+      setTimeout(() => { if (scanRunning) requestAnimationFrame(loop); }, 200);
     })();
+
   } else if (typeof ZXingBrowser !== 'undefined') {
+    // ZXing은 단일 스캔만 가능 — 전체 프레임 사용
     try {
       const reader = new ZXingBrowser.BrowserMultiFormatReader();
       reader.decodeFromVideoElement(video, (result) => {
@@ -617,6 +638,19 @@ function startLoop(video) {
       });
     } catch(e) { setBadge('ZXing 오류', 'eb-error'); }
   }
+}
+
+// 특정 영역만 잘라서 스캔
+async function scanZone(video, fullW, fullH, sx, sy, sw, sh) {
+  try {
+    // 잘라낸 영역을 2배 확대해서 캔버스에 그림 (인식률 향상)
+    const scale = 2;
+    zoneCanvas.width  = sw * scale;
+    zoneCanvas.height = sh * scale;
+    zoneCtx.drawImage(video, sx, sy, sw, sh, 0, 0, sw * scale, sh * scale);
+    const results = await nativeDet.detect(zoneCanvas).catch(() => []);
+    results.forEach(r => { if (r.rawValue) feedCode(r.rawValue); });
+  } catch(e) {}
 }
 
 function flipCam() {
@@ -770,24 +804,29 @@ function dlCSV() {
   showToast('CSV 저장: ' + fn);
 }
 
+function toEmailText() {
+  // 메일 본문용 — 탭 구분으로 피벗 구조 유지
+  const {rows} = buildXLSXData();
+  return rows.map(r => r.join('\t')).join('\n');
+}
+
 function sendEmail() {
   if (!groups.length) { showToast('스캔된 항목이 없습니다'); return; }
   const to   = document.getElementById('eto').value.trim();
   const subj = document.getElementById('esubj').value.trim();
   const note = document.getElementById('enote').value.trim();
 
-  // 엑셀 첨부 불가(mailto 제한) → CSV를 본문에 포함 + 엑셀 자동 다운로드
+  // 엑셀 파일 먼저 다운로드 후 메일 앱 열기
   if (typeof XLSX !== 'undefined') {
-    // 엑셀 먼저 다운로드
     dlXLSX();
-    showToast('엑셀 저장 후 메일 앱 실행...');
     setTimeout(() => {
-      const body = (note ? note+'\n\n' : '') +
-        '※ 첨부파일(xlsx)은 별도 다운로드되었습니다.\n\n=== 출하 목록 ===\n' + toCSV();
+      const body = (note ? note + '\n\n' : '') +
+        '[엑셀 파일이 자동으로 다운로드되었습니다. 첨부 후 발송해주세요]\n\n' +
+        '=== 출하 목록 ===\n' + toEmailText();
       window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
-    }, 800);
+    }, 600);
   } else {
-    const body = (note ? note+'\n\n' : '') + '=== 출하 목록 ===\n' + toCSV();
+    const body = (note ? note + '\n\n' : '') + '=== 출하 목록 ===\n' + toEmailText();
     window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
   }
 }
