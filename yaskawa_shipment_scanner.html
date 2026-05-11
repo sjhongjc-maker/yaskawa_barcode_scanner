@@ -67,11 +67,18 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,'Helvetica 
 @keyframes beam{0%,100%{top:2%}50%{top:95%}}
 .scan-bot{flex:1;background:rgba(0,0,0,.5);display:flex;flex-direction:column;
   align-items:center;gap:10px;padding:14px 20px 10px;pointer-events:none}
-.scan-hint{font-size:14px;color:rgba(255,255,255,.92);font-weight:600;text-align:center}
-.scan-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:all}
-.chip{font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);
-  color:rgba(255,255,255,.7);background:transparent;cursor:pointer;font-weight:600}
-.chip.on{background:rgba(255,255,255,.2);border-color:#fff;color:#fff}
+.scan-hint{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;text-align:center}
+.capture-btn{display:flex;align-items:center;gap:8px;padding:13px 32px;
+  background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.7);
+  color:#fff;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;
+  pointer-events:all;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.capture-btn:active{background:rgba(255,255,255,.3)}
+.capture-btn.scanning{background:rgba(59,130,246,.5);border-color:#3b82f6;animation:pulse .6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.capture-status{font-size:12px;color:rgba(255,255,255,.6);text-align:center;padding:0 20px;line-height:1.4}
+.capture-status.ok{color:#4ade80;font-weight:600}
+.capture-status.err{color:#f87171;font-weight:600}
+
 .cam-side-btns{position:absolute;top:16px;right:14px;display:flex;flex-direction:column;gap:10px;pointer-events:all}
 .cam-ico{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);
   border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -216,13 +223,12 @@ textarea.finp{resize:none;height:70px}
       <div class="scan-side"></div>
     </div>
     <div class="scan-bot">
-      <div class="scan-hint" id="scan-hint">바코드 / QR을 프레임 안에 맞춰주세요</div>
-      <div class="scan-chips">
-        <button class="chip" onclick="setMode('model')">모델명</button>
-        <button class="chip" onclick="setMode('order')">O/N</button>
-        <button class="chip" onclick="setMode('serial')">S/N</button>
-        <button class="chip on" onclick="setMode('auto')">자동감지</button>
-      </div>
+      <div class="scan-hint" id="scan-hint">라벨 전체를 프레임에 맞추고 캡처하세요</div>
+      <button class="capture-btn" id="capture-btn" onclick="captureAndScan()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M20 7h-3.5l-1.5-2h-6L7.5 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>
+        캡처하여 스캔
+      </button>
+      <div class="capture-status" id="capture-status">라벨 전체가 프레임 안에 들어오게 해주세요</div>
     </div>
   </div>
   <div class="engine-badge eb-loading" id="eng-badge">준비 중...</div>
@@ -543,17 +549,16 @@ function tryAdd(raw) {
 
   updateProgress();
 
-  // 3개 모두 읽히면 즉시 등록
+  // 수동 입력: 3개 모두 있으면 즉시 등록
   if (buf.model && buf.order && buf.serial) {
     clearTimeout(bufTimer);
     bufTimer = null;
-    setTimeout(flushBuf, 300);
+    setTimeout(flushBuf, 200);
     return;
   }
-
-  // 타이머: 4초 내 추가 스캔 없으면 있는 것만 등록
+  // 수동 입력: 10초 대기 후 있는 것만 등록
   clearTimeout(bufTimer);
-  bufTimer = setTimeout(flushBuf, BUF_TIMEOUT);
+  bufTimer = setTimeout(flushBuf, 10000);
 }
 
 function isDup(val, type) {
@@ -648,36 +653,145 @@ async function startCam() {
 }
 
 function startScanLoop(video) {
-  scanRunning = false;
-  if (!engineReady) { showToast('스캐너 엔진 없음 — 직접 입력을 이용해주세요'); return; }
-
-  if (useNative) {
-    if (!scanCanvas) {
-      scanCanvas = document.createElement('canvas');
-      scanCtx = scanCanvas.getContext('2d', {willReadFrequently:true});
-    }
-    scanRunning = true;
-    (async function loop() {
-      if (!scanRunning) return;
-      if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
-        scanCanvas.width  = video.videoWidth;
-        scanCanvas.height = video.videoHeight;
-        scanCtx.drawImage(video, 0, 0);
-        try {
-          const res = await nativeDet.detect(scanCanvas);
-          res.forEach(r => { if (r.rawValue) tryAdd(r.rawValue); });
-        } catch(e) {}
-      }
-      setTimeout(() => { if (scanRunning) requestAnimationFrame(loop); }, 350);
-    })();
-  } else if (typeof ZXingBrowser !== 'undefined') {
-    try {
-      const reader = new ZXingBrowser.BrowserMultiFormatReader();
-      reader.decodeFromVideoElement(video, (result, err) => {
-        if (result) tryAdd(result.getText());
-      });
-    } catch(e) { showToast('ZXing 오류 — 직접 입력을 이용해주세요'); }
+  // 캡처 방식: 연속 루프 없음, 사용자가 캡처 버튼 누를 때만 스캔
+  // 카메라가 켜지면 캡처 버튼 활성화
+  document.getElementById('capture-btn').style.display = 'flex';
+  if (!engineReady) {
+    setCaptureStatus('스캐너 준비 중... 잠시 후 다시 시도해주세요', 'err');
   }
+}
+
+// ── 캡처 후 한 프레임에서 모든 바코드 동시 추출 ──────────────────────────
+async function captureAndScan() {
+  const video = document.getElementById('video');
+  if (!video.srcObject || video.readyState < video.HAVE_ENOUGH_DATA) {
+    setCaptureStatus('카메라가 준비되지 않았습니다', 'err');
+    return;
+  }
+  if (!engineReady) {
+    setCaptureStatus('스캐너 엔진이 준비되지 않았습니다', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('capture-btn');
+  btn.classList.add('scanning');
+  setCaptureStatus('스캔 중...', '');
+
+  // 현재 프레임 캡처
+  if (!scanCanvas) {
+    scanCanvas = document.createElement('canvas');
+    scanCtx = scanCanvas.getContext('2d', {willReadFrequently:true});
+  }
+  scanCanvas.width  = video.videoWidth;
+  scanCanvas.height = video.videoHeight;
+  scanCtx.drawImage(video, 0, 0);
+
+  // 캡처된 한 이미지에서 모든 바코드 동시 추출
+  let codes = [];
+  try {
+    if (useNative && nativeDet) {
+      const results = await nativeDet.detect(scanCanvas);
+      codes = results.map(r => r.rawValue).filter(Boolean);
+    } else if (typeof ZXingBrowser !== 'undefined') {
+      // ZXing은 한번에 하나만 읽으므로 여러 번 시도
+      codes = await zxingMultiScan(scanCanvas);
+    }
+  } catch(e) {
+    console.error('Scan error:', e);
+  }
+
+  btn.classList.remove('scanning');
+
+  if (!codes.length) {
+    flash('err');
+    setCaptureStatus('바코드를 찾지 못했습니다. 더 가까이 대주세요', 'err');
+    return;
+  }
+
+  // 같은 프레임에서 나온 코드들을 한 번에 처리
+  const result = processCapture(codes);
+  if (result.registered) {
+    setCaptureStatus('✓ 등록 완료! 다음 라벨을 스캔하세요', 'ok');
+  } else if (result.missing.length > 0) {
+    setCaptureStatus('미인식: ' + result.missing.join(', ') + ' — 다시 시도해주세요', 'err');
+  }
+}
+
+// 캡처된 코드 배열을 한 품목으로 처리
+function processCapture(codes) {
+  // 버퍼 초기화 (새 캡처마다 깨끗하게 시작)
+  buf = {model:null, order:null, serial:null, qr:[], others:[]};
+
+  for (const raw of codes) {
+    const {type, val} = classify(raw);
+    if (type === 'ignore') continue;
+    if (type === 'model'  && !buf.model)  buf.model  = val;
+    else if (type === 'order'  && !buf.order)  buf.order  = val;
+    else if (type === 'serial' && !buf.serial) buf.serial = val;
+    else if (type === 'qr')     buf.qr.push(val);
+  }
+
+  updateProgress();
+
+  // S/N 중복 체크
+  if (buf.serial && isDup(buf.serial, 'serial')) {
+    flash('err');
+    showDup(buf.serial);
+    buf = {model:null, order:null, serial:null, qr:[], others:[]};
+    hideProgress();
+    return {registered:false, missing:['S/N 중복']};
+  }
+
+  // 3개 모두 있으면 즉시 등록
+  if (buf.model && buf.order && buf.serial) {
+    setTimeout(flushBuf, 100);
+    return {registered:true, missing:[]};
+  }
+
+  // 부족한 항목 표시
+  const missing = [];
+  if (!buf.model)  missing.push('모델명');
+  if (!buf.order)  missing.push('O/N');
+  if (!buf.serial) missing.push('S/N');
+  return {registered:false, missing};
+}
+
+// ZXing으로 한 이미지에서 최대한 많은 바코드 추출
+async function zxingMultiScan(canvas) {
+  const found = new Set();
+  const reader = new ZXingBrowser.BrowserMultiFormatReader();
+  // 여러 힌트 형식으로 여러 번 시도
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+      const luminanceSource = new ZXingBrowser.ZXingBrowser.BinaryBitmap(
+        new ZXingBrowser.ZXingBrowser.GlobalHistogramBinarizer(
+          new ZXingBrowser.ZXingBrowser.RGBLuminanceSource(imageData.data, canvas.width, canvas.height)
+        )
+      );
+      // ZXing single decode per attempt
+      const result = await reader.decodeFromImageElement(canvas);
+      if (result) found.add(result.getText());
+    } catch(e) { break; }
+  }
+  // ZXing 단순 방식: canvas를 blob으로 변환해서 decodeFromImageUrl 사용
+  if (found.size === 0) {
+    try {
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+      const url = URL.createObjectURL(blob);
+      const r = new ZXingBrowser.BrowserMultiFormatReader();
+      const res = await r.decodeFromImageUrl(url);
+      if (res) found.add(res.getText());
+      URL.revokeObjectURL(url);
+    } catch(e) {}
+  }
+  return [...found];
+}
+
+function setCaptureStatus(msg, cls) {
+  const el = document.getElementById('capture-status');
+  el.textContent = msg;
+  el.className = 'capture-status' + (cls ? ' '+cls : '');
 }
 
 function flipCam() {
@@ -697,15 +811,8 @@ async function toggleTorch() {
   } catch(e) { showToast('플래시 미지원'); torchOn = false; }
 }
 
-// ══ 스캔 모드 ════════════════════════════
-function setMode(m) {
-  scanMode = m;
-  document.querySelectorAll('.chip').forEach((c,i) =>
-    c.classList.toggle('on', ['model','order','serial','auto'][i] === m));
-  const h = {model:'모델명 바코드', order:'오더번호(O/N) 바코드',
-    serial:'시리얼번호(S/N) 바코드', auto:'바코드 / QR 자동감지'};
-  document.getElementById('scan-hint').textContent = h[m] || h.auto;
-}
+// ══ 스캔 모드 (고정: auto) ═══════════════
+function setMode(m) { scanMode = 'auto'; }
 
 // ══ UI ══════════════════════════════════
 function flash(type) {
