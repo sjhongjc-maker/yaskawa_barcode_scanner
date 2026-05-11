@@ -15,7 +15,7 @@
   ║  zxing-bundle.js 를 생성하고 GitHub Pages 에 배포함     ║
   ╚══════════════════════════════════════════════════════════╝
 -->
-<script src="zxing-bundle.js"></script>
+<script src="zxing-bundle.js" onload="window._zxingLoaded=true" onerror="window._zxingLoaded=false"></script>
 
 <style>
 :root{
@@ -717,7 +717,17 @@ function showToast(m){
 document.getElementById('min').addEventListener('keydown',e=>{if(e.key==='Enter')addManual();});
 
 // 시작
-initEngine();
+// zxing-bundle.js 로드 완료 후 initEngine 실행
+function waitAndInit(){
+  if(typeof ZXingBrowser !== 'undefined'){
+    initEngine();
+  } else if(window._zxingLoaded === false){
+    initEngine(); // 로드 실패 — 폴백으로 진행
+  } else {
+    setTimeout(waitAndInit, 100);
+  }
+}
+waitAndInit();
 </script>
 </body>
 </html>
